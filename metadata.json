@@ -1,0 +1,8 @@
+{
+  "name": "Remix Life App - Rhythmic Wellness \u0026 Habit Tracker",
+  "description": "Holistic rhythm tracking across movement, deep focus sprints, and mindful nourishment.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
