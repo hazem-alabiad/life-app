@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { TabType, WorkoutSession, MealItem, FocusSessionState, ExerciseItem, GitHubUser, SyncStatus, PomodoroTaskGroup, PomodoroTask, PomodoroSubTask } from '../types';
+import { TabType, WorkoutSession, MealItem, FocusSessionState, ExerciseItem, GitHubUser, SyncStatus, PomodoroTaskGroup, PomodoroTask, PomodoroSubTask, AppSettings } from '../types';
 import { APP_IMAGES } from '../assets/images';
 import { isSupabaseConfigured, syncUserDataToSupabase, fetchUserDataFromSupabase } from '../db/supabase';
 
@@ -12,6 +12,13 @@ interface AppContextType {
   resetFocusTimer: () => void;
   setFocusMode: (mode: 'focus' | 'posture_break' | 'deep_break') => void;
   setAmbientSound: (sound: 'none' | 'rain' | 'binaural' | 'forest' | 'lofi') => void;
+  // Settings & Configuration
+  settings: AppSettings;
+  updateSettings: (newSettings: Partial<AppSettings>) => void;
+  resetSettingsToDefault: () => void;
+  showFocusSettingsModal: boolean;
+  setShowFocusSettingsModal: (val: boolean) => void;
+  playChime: () => void;
   // Pomodoro Task Groups & Subtasks
   pomodoroGroups: PomodoroTaskGroup[];
   activeFocusTarget: { groupId: string; taskId: string; subTaskId?: string; label: string } | null;
@@ -276,6 +283,57 @@ export const initialPomodoroGroups: PomodoroTaskGroup[] = [
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+export const defaultAppSettings: AppSettings = {
+  focusDurationMin: 25,
+  shortBreakDurationMin: 5,
+  longBreakDurationMin: 15,
+  longBreakInterval: 4,
+  autoStartBreaks: false,
+  autoStartFocus: false,
+  soundAlerts: true,
+  soundVolume: 75,
+  tickSound: false,
+
+  dailyCaloriesGoal: 2400,
+  dailyProteinGoal: 150,
+  weeklyWorkoutGoal: 5,
+  dailyMovementGoalMin: 45,
+  dailyWaterGoalLiters: 2.5,
+
+  timeFormat: '12h',
+  compactView: false,
+  themeAccent: 'cyan',
+};
+
+const SETTINGS_STORAGE_KEY = 'life_app_settings_v1';
+
+export function playChimeAudio(volume = 0.5) {
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    const vol = Math.max(0.01, Math.min(1, volume));
+
+    const freqs = [523.25, 659.25, 783.99];
+    freqs.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+      gain.gain.setValueAtTime(0, now + idx * 0.1);
+      gain.gain.linearRampToValueAtTime(vol * 0.18, now + idx * 0.1 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.1 + 0.6);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.1);
+      osc.stop(now + idx * 0.1 + 0.65);
+    });
+  } catch {
+    // audio restricted
+  }
+}
+
 const LOCAL_STORAGE_KEY = 'life_app_data_v2';
 const TOKEN_KEY = 'life_auth_token';
 
@@ -285,6 +343,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [moveSubTab, setMoveSubTab] = useState<'schedule' | 'exercises' | 'history'>('schedule');
   const [nourishSubTab, setNourishSubTab] = useState<'log' | 'insights'>('log');
   const [desktopNavCollapsed, setDesktopNavCollapsed] = useState<boolean>(false);
+
+  // App Settings & Customization
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    try {
+      const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (saved) {
+        return { ...defaultAppSettings, ...JSON.parse(saved) };
+      }
+    } catch {
+      // ignore
+    }
+    return defaultAppSettings;
+  });
+
+  const [showFocusSettingsModal, setShowFocusSettingsModal] = useState<boolean>(false);
 
   // Pomodoro Task Groups & Subtasks State
   const [pomodoroGroups, setPomodoroGroups] = useState<PomodoroTaskGroup[]>(initialPomodoroGroups);
@@ -770,6 +843,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
+    setSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+      } catch (err) {
+        console.warn('Failed to save settings:', err);
+      }
+      return updated;
+    });
+
+    if (newSettings.focusDurationMin !== undefined) {
+      setFocusState((prev) => {
+        if (prev.mode === 'focus' && !prev.isRunning) {
+          const secs = newSettings.focusDurationMin! * 60;
+          return { ...prev, secondsRemaining: secs, totalSeconds: secs };
+        }
+        return prev;
+      });
+    }
+  }, []);
+
+  const resetSettingsToDefault = useCallback(() => {
+    setSettings(defaultAppSettings);
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(defaultAppSettings));
+    } catch {
+      // ignore
+    }
+    const secs = defaultAppSettings.focusDurationMin * 60;
+    setFocusState((prev) => ({
+      ...prev,
+      secondsRemaining: secs,
+      totalSeconds: secs,
+      isRunning: false,
+    }));
+  }, []);
+
+  const playChime = useCallback(() => {
+    playChimeAudio(settings.soundVolume / 100);
+  }, [settings.soundVolume]);
+
   // Ticking timer effect
   useEffect(() => {
     if (!focusState.isRunning) return;
@@ -777,23 +892,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const interval = setInterval(() => {
       setFocusState((prev) => {
         if (prev.secondsRemaining <= 1) {
+          if (settings.soundAlerts) {
+            playChimeAudio(settings.soundVolume / 100);
+          }
+
           if (prev.mode === 'focus') {
+            const isLong = prev.currentCycle % settings.longBreakInterval === 0;
+            const breakMode = isLong ? 'deep_break' : 'posture_break';
+            const breakSecs = (isLong ? settings.longBreakDurationMin : settings.shortBreakDurationMin) * 60;
             return {
               ...prev,
-              mode: 'posture_break',
-              secondsRemaining: 5 * 60,
-              totalSeconds: 5 * 60,
-              isRunning: true,
+              mode: breakMode,
+              secondsRemaining: breakSecs,
+              totalSeconds: breakSecs,
+              isRunning: settings.autoStartBreaks,
             };
           } else {
             const nextCycle = prev.currentCycle >= prev.totalCycles ? 1 : prev.currentCycle + 1;
+            const focusSecs = settings.focusDurationMin * 60;
             return {
               ...prev,
               mode: 'focus',
               currentCycle: nextCycle,
-              secondsRemaining: 25 * 60,
-              totalSeconds: 25 * 60,
-              isRunning: true,
+              secondsRemaining: focusSecs,
+              totalSeconds: focusSecs,
+              isRunning: settings.autoStartFocus,
             };
           }
         }
@@ -805,23 +928,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [focusState.isRunning]);
+  }, [focusState.isRunning, settings]);
 
   const toggleFocusTimer = () => {
     setFocusState((prev) => ({ ...prev, isRunning: !prev.isRunning }));
   };
 
   const resetFocusTimer = () => {
+    const total =
+      focusState.mode === 'focus'
+        ? settings.focusDurationMin * 60
+        : focusState.mode === 'posture_break'
+        ? settings.shortBreakDurationMin * 60
+        : settings.longBreakDurationMin * 60;
     setFocusState((prev) => ({
       ...prev,
-      secondsRemaining: prev.mode === 'focus' ? 25 * 60 : 5 * 60,
-      totalSeconds: prev.mode === 'focus' ? 25 * 60 : 5 * 60,
+      secondsRemaining: total,
+      totalSeconds: total,
       isRunning: false,
     }));
   };
 
   const setFocusMode = (mode: 'focus' | 'posture_break' | 'deep_break') => {
-    const total = mode === 'focus' ? 25 * 60 : mode === 'posture_break' ? 5 * 60 : 15 * 60;
+    const total =
+      mode === 'focus'
+        ? settings.focusDurationMin * 60
+        : mode === 'posture_break'
+        ? settings.shortBreakDurationMin * 60
+        : settings.longBreakDurationMin * 60;
     setFocusState((prev) => ({
       ...prev,
       mode,
@@ -1035,6 +1169,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setShowProfileModal,
         showSettingsModal,
         setShowSettingsModal,
+        settings,
+        updateSettings,
+        resetSettingsToDefault,
+        showFocusSettingsModal,
+        setShowFocusSettingsModal,
+        playChime,
         showSupabaseModal,
         setShowSupabaseModal,
         showCommandPalette,

@@ -33,6 +33,31 @@ export interface MealItem {
   mindfulInsight: string;
 }
 
+export interface AppSettings {
+  // Pomodoro Configuration
+  focusDurationMin: number;
+  shortBreakDurationMin: number;
+  longBreakDurationMin: number;
+  longBreakInterval: number;
+  autoStartBreaks: boolean;
+  autoStartFocus: boolean;
+  soundAlerts: boolean;
+  soundVolume: number;
+  tickSound: boolean;
+
+  // Health & Rhythm Goals Configuration
+  dailyCaloriesGoal: number;
+  dailyProteinGoal: number;
+  weeklyWorkoutGoal: number;
+  dailyMovementGoalMin: number;
+  dailyWaterGoalLiters: number;
+
+  // General App Preferences
+  timeFormat: '12h' | '24h';
+  compactView: boolean;
+  themeAccent: 'emerald' | 'cyan' | 'purple' | 'amber';
+}
+
 export interface FocusSessionState {
   title: string;
   currentCycle: number;

@@ -24,6 +24,7 @@ export const HomeScreen: React.FC = () => {
     totalMovementMinutes,
     meals,
     setShowSnapMealModal,
+    settings,
   } = useApp();
 
   // Format timer MM:SS
@@ -34,7 +35,8 @@ export const HomeScreen: React.FC = () => {
   };
 
   const totalCalories = meals.reduce((acc, m) => acc + (m.calories || 0), 0);
-  const targetCalories = 2400;
+  const targetCalories = settings?.dailyCaloriesGoal || 2400;
+  const weeklyWorkoutTarget = settings?.weeklyWorkoutGoal || 5;
   const calPercent = Math.min(100, Math.round((totalCalories / targetCalories) * 100));
 
   return (
@@ -52,7 +54,7 @@ export const HomeScreen: React.FC = () => {
                 <Target className="w-3.5 h-3.5 text-cyan-400" />
                 Focus
               </span>
-              <span className="font-mono text-[11px]">Cycle {focusState.currentCycle} of {focusState.totalCycles}</span>
+              <span className="font-mono text-[11px]">Cycle {focusState.currentCycle} of {settings?.longBreakInterval || 4}</span>
             </div>
 
             <div>
@@ -91,7 +93,7 @@ export const HomeScreen: React.FC = () => {
                 <Dumbbell className="w-3.5 h-3.5 text-rose-400" />
                 Movement
               </span>
-              <span className="font-mono text-[11px]">{completedWorkoutsCount}/5 weekly</span>
+              <span className="font-mono text-[11px]">{completedWorkoutsCount}/{weeklyWorkoutTarget} weekly</span>
             </div>
 
             <div>
@@ -107,7 +109,7 @@ export const HomeScreen: React.FC = () => {
             <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
               <div
                 className="h-full bg-rose-400 rounded-full transition-all duration-300"
-                style={{ width: `${Math.round((completedWorkoutsCount / 5) * 100)}%` }}
+                style={{ width: `${Math.round((completedWorkoutsCount / weeklyWorkoutTarget) * 100)}%` }}
               />
             </div>
           </div>

@@ -1,10 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, SkipForward, Volume2, VolumeX, Sparkles, AlertCircle, Headphones, CheckCircle2, ShieldCheck, Target } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  Sparkles,
+  SlidersHorizontal,
+  Headphones,
+  CheckCircle2,
+  Target,
+  X,
+  Wind,
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { PomodoroTaskDeck } from '../components/PomodoroTaskDeck';
 
 export const FocusScreen: React.FC = () => {
-  const { focusState, toggleFocusTimer, resetFocusTimer, setFocusMode, setAmbientSound, activeFocusTarget } = useApp();
+  const {
+    focusState,
+    toggleFocusTimer,
+    resetFocusTimer,
+    setFocusMode,
+    setAmbientSound,
+    activeFocusTarget,
+    setActiveFocusTarget,
+    settings,
+    setShowFocusSettingsModal,
+  } = useApp();
+
   const [soundActive, setSoundActive] = useState<boolean>(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
@@ -38,7 +63,7 @@ export const FocusScreen: React.FC = () => {
       osc.type = sound === 'binaural' ? 'sine' : 'triangle';
       osc.frequency.setValueAtTime(sound === 'binaural' ? 144 : 220, ctx.currentTime);
 
-      gain.gain.setValueAtTime(0.03, ctx.currentTime);
+      gain.gain.setValueAtTime((settings.soundVolume / 100) * 0.04, ctx.currentTime);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -85,246 +110,218 @@ export const FocusScreen: React.FC = () => {
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="space-y-6 pb-16 animate-in fade-in duration-300 max-w-7xl mx-auto w-full">
-      {/* Top Header info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+    <div className="space-y-6 pb-16 animate-in fade-in duration-300 max-w-5xl mx-auto w-full">
+      {/* 1. Clean Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div>
-          <span className="text-[11px] font-bold tracking-wider text-[#22d3ee] uppercase">
-            ULTRADIAN FOCUS COCKPIT
-          </span>
-          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mt-0.5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Focus Station</h2>
+            <span className="text-xs text-slate-400">·</span>
+            <span className="text-xs text-cyan-400 font-mono font-semibold">
+              Cycle {focusState.currentCycle} of {settings.longBreakInterval}
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mt-0.5">
             {focusState.mode === 'focus'
-              ? 'Deep Work Sprint'
+              ? 'Deep ultradian sprint · Eliminate distractions'
               : focusState.mode === 'posture_break'
-              ? '5m Posture Reset & Spine Decompression'
-              : 'Long Restorative Pause'}
-          </h2>
+              ? 'Short recovery break · Stretch spine & rest eyes'
+              : 'Extended pause · Hydrate & reset'}
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="px-3.5 py-1.5 rounded-full bg-[#181f2b] border border-[#22d3ee]/30 text-xs text-[#22d3ee] font-mono font-bold">
-            Cycle {focusState.currentCycle} of {focusState.totalCycles}
-          </span>
+        {/* Quick Toolbar: Ambient Sound + Configure Gear */}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {/* Soundscapes dropdown / toggle */}
+          <div className="flex items-center p-1 bg-[#12151e] border border-white/5 rounded-xl">
+            <button
+              onClick={() => toggleAmbientAudio('binaural')}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                soundActive && focusState.ambientSound === 'binaural'
+                  ? 'bg-cyan-500/20 text-cyan-300'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="144Hz Theta Waves"
+            >
+              <Headphones className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Theta</span>
+            </button>
+            <button
+              onClick={() => toggleAmbientAudio('rain')}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                soundActive && focusState.ambientSound === 'rain'
+                  ? 'bg-cyan-500/20 text-cyan-300'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Pink Flow Audio"
+            >
+              <Wind className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Flow</span>
+            </button>
+            {soundActive && (
+              <button
+                onClick={() => toggleAmbientAudio('none')}
+                className="p-1.5 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+                title="Mute Sound"
+              >
+                <VolumeX className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Pomodoro Settings Button */}
+          <button
+            onClick={() => setShowFocusSettingsModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#12151e] hover:bg-white/[0.06] border border-white/5 text-xs font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer"
+            title="Configure Pomodoro durations and alerts"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Configure</span>
+          </button>
         </div>
       </div>
 
-      {/* Mode Selector Tabs */}
-      <div className="grid grid-cols-3 gap-3 max-w-xl">
-        <button
-          onClick={() => setFocusMode('focus')}
-          className={`py-2.5 px-4 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-            focusState.mode === 'focus'
-              ? 'bg-[#152a38] border-[#22d3ee] text-[#22d3ee] shadow-md shadow-[#22d3ee]/10'
-              : 'bg-[#141822] border-white/5 text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          25m Sprint
-        </button>
+      {/* 2. Simplified Timer Display Card */}
+      <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center space-y-6">
+        {/* Mode Selector Segmented Tabs */}
+        <div className="inline-flex p-1 bg-[#151924] border border-white/5 rounded-xl">
+          <button
+            onClick={() => setFocusMode('focus')}
+            className={`py-1.5 px-4 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              focusState.mode === 'focus'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Focus ({settings.focusDurationMin}m)
+          </button>
 
-        <button
-          onClick={() => setFocusMode('posture_break')}
-          className={`py-2.5 px-4 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-            focusState.mode === 'posture_break'
-              ? 'bg-[#152c25] border-[#34d399] text-[#34d399] shadow-md shadow-[#34d399]/10'
-              : 'bg-[#141822] border-white/5 text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          5m Posture Break
-        </button>
+          <button
+            onClick={() => setFocusMode('posture_break')}
+            className={`py-1.5 px-4 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              focusState.mode === 'posture_break'
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Short Break ({settings.shortBreakDurationMin}m)
+          </button>
 
-        <button
-          onClick={() => setFocusMode('deep_break')}
-          className={`py-2.5 px-4 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-            focusState.mode === 'deep_break'
-              ? 'bg-[#2d1f22] border-[#ff6b4a] text-[#ff6b4a] shadow-md shadow-[#ff6b4a]/10'
-              : 'bg-[#141822] border-white/5 text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          15m Restorative
-        </button>
-      </div>
-
-      {/* Main Cockpit Layout: Dial Card + Sound & Posture Deck */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left Dial Card (7 cols on desktop) */}
-        <div className="lg:col-span-7 bg-[#141822] border border-white/[0.08] rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col items-center justify-center text-center">
-          {/* Large SVG Timer Ring */}
-          <div className="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center my-4">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 220 220">
-              {/* Background ring */}
-              <circle
-                cx="110"
-                cy="110"
-                r={radius}
-                fill="none"
-                stroke="#1f2635"
-                strokeWidth="10"
-              />
-              {/* Active animated stroke */}
-              <circle
-                cx="110"
-                cy="110"
-                r={radius}
-                fill="none"
-                stroke={focusState.mode === 'focus' ? '#22d3ee' : focusState.mode === 'posture_break' ? '#34d399' : '#ff6b4a'}
-                strokeWidth="10"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                className="transition-all duration-1000 ease-linear"
-              />
-            </svg>
-
-            {/* Inner Content Display */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl sm:text-5xl font-extrabold text-white font-mono tracking-tighter tabular-nums drop-shadow-md">
-                {formatTime(focusState.secondsRemaining)}
-              </span>
-              <span className="text-xs text-slate-400 font-medium tracking-wider uppercase mt-1">
-                {focusState.isRunning ? 'Active Flow' : 'Paused'}
-              </span>
-              <span className="text-[11px] text-[#22d3ee] font-mono mt-0.5">
-                {Math.round(progress)}% Completed
-              </span>
-            </div>
-          </div>
-
-          {/* Controls Bar */}
-          <div className="flex items-center gap-3 pt-2">
-            <button
-              onClick={resetFocusTimer}
-              className="p-3.5 rounded-2xl bg-[#1b2230] hover:bg-[#252f42] text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/5"
-              title="Reset Timer"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={toggleFocusTimer}
-              className="px-8 py-3.5 rounded-2xl bg-[#22d3ee] hover:bg-[#06b6d4] text-[#0f172a] font-bold text-sm flex items-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-[#22d3ee]/25 active:scale-95"
-            >
-              {focusState.isRunning ? (
-                <>
-                  <Pause className="w-5 h-5 fill-current" />
-                  <span>Pause Sprint</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-5 h-5 fill-current" />
-                  <span>Resume Sprint</span>
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={() => setFocusMode(focusState.mode === 'focus' ? 'posture_break' : 'focus')}
-              className="p-3.5 rounded-2xl bg-[#1b2230] hover:bg-[#252f42] text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/5"
-              title="Skip to next phase"
-            >
-              <SkipForward className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Active Focus Target Pill */}
-          {activeFocusTarget && (
-            <div className="mt-4 px-3.5 py-1.5 rounded-full bg-[#16222f] border border-[#22d3ee]/30 flex items-center gap-2 text-xs text-[#22d3ee] max-w-md">
-              <Target className="w-3.5 h-3.5 shrink-0 animate-pulse" />
-              <span className="truncate font-medium">{activeFocusTarget.label}</span>
-            </div>
-          )}
+          <button
+            onClick={() => setFocusMode('deep_break')}
+            className={`py-1.5 px-4 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              focusState.mode === 'deep_break'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Long Break ({settings.longBreakDurationMin}m)
+          </button>
         </div>
 
-        {/* Right Side: Soundscapes & Posture Protocol (5 cols on desktop) */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Ambient Soundscape Deck */}
-          <div className="bg-[#141822] border border-white/[0.08] rounded-2xl p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Headphones className="w-4 h-4 text-[#22d3ee]" />
-                <span className="text-xs font-bold text-white uppercase tracking-wider">
-                  Ambient Bio-Acoustics
-                </span>
-              </div>
-              {soundActive && (
-                <span className="flex items-center gap-1 text-[10px] text-[#22d3ee] font-mono">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#22d3ee] animate-ping" />
-                  Active
-                </span>
-              )}
-            </div>
+        {/* Minimalist SVG Radial Ring */}
+        <div className="relative w-60 h-60 sm:w-68 sm:h-68 flex items-center justify-center my-1">
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 220 220">
+            {/* Background ring */}
+            <circle
+              cx="110"
+              cy="110"
+              r={radius}
+              fill="none"
+              stroke="#181d2a"
+              strokeWidth="8"
+            />
+            {/* Active animated stroke */}
+            <circle
+              cx="110"
+              cy="110"
+              r={radius}
+              fill="none"
+              stroke={focusState.mode === 'focus' ? '#22d3ee' : focusState.mode === 'posture_break' ? '#34d399' : '#c084fc'}
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              className="transition-all duration-1000 ease-linear"
+            />
+          </svg>
 
-            <p className="text-xs text-slate-400">
-              Synthesized audio hum to mask background chatter and enhance theta-wave coherence.
-            </p>
-
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <button
-                onClick={() => toggleAmbientAudio('binaural')}
-                className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                  focusState.ambientSound === 'binaural' && soundActive
-                    ? 'bg-[#152a38] border-[#22d3ee] text-[#22d3ee]'
-                    : 'bg-[#171d27] border-white/5 text-slate-300 hover:bg-[#202735]'
-                }`}
-              >
-                <span>Binaural (144 Hz)</span>
-                <Volume2 className="w-3.5 h-3.5 opacity-70" />
-              </button>
-
-              <button
-                onClick={() => toggleAmbientAudio('rain')}
-                className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                  focusState.ambientSound === 'rain' && soundActive
-                    ? 'bg-[#152a38] border-[#22d3ee] text-[#22d3ee]'
-                    : 'bg-[#171d27] border-white/5 text-slate-300 hover:bg-[#202735]'
-                }`}
-              >
-                <span>Pink Flow / Rain</span>
-                <Volume2 className="w-3.5 h-3.5 opacity-70" />
-              </button>
-            </div>
-          </div>
-
-          {/* Posture Reset Guide */}
-          <div className="bg-[#141822] border border-white/[0.08] rounded-2xl p-5 shadow-sm space-y-3">
-            <span className="text-[10px] font-bold tracking-wider text-[#34d399] uppercase">
-              INTERLEAVED POSTURE PROTOCOL
+          {/* Central digits */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-5xl sm:text-6xl font-extrabold text-white font-mono tracking-tight tabular-nums drop-shadow-sm">
+              {formatTime(focusState.secondsRemaining)}
             </span>
-            <h4 className="text-base font-bold text-white tracking-tight">
-              Circadian Micro-Break Stretch
-            </h4>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              When this 25m cycle completes, execute the 3-step posture sequence:
-            </p>
-
-            <div className="space-y-2 text-xs text-slate-300">
-              <div className="p-2.5 rounded-xl bg-[#171d28] border border-white/5 flex items-center gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-[#34d399]/20 text-[#34d399] flex items-center justify-center font-bold text-[10px]">1</span>
-                <span>Stand tall, interlace fingers behind back, expand ribcage (60s)</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-[#171d28] border border-white/5 flex items-center gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-[#34d399]/20 text-[#34d399] flex items-center justify-center font-bold text-[10px]">2</span>
-                <span>Gentle neck retractions & chin tucks against headrest (60s)</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-[#171d28] border border-white/5 flex items-center gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-[#34d399]/20 text-[#34d399] flex items-center justify-center font-bold text-[10px]">3</span>
-                <span>Drink 250ml water and gaze at 20+ feet distant object (60s)</span>
-              </div>
-            </div>
+            <span className="text-xs text-slate-400 font-medium tracking-wider uppercase mt-1">
+              {focusState.isRunning ? 'Active Flow' : 'Paused'}
+            </span>
+            <span className="text-[11px] font-mono text-cyan-400 mt-0.5">
+              {Math.round(progress)}% complete
+            </span>
           </div>
         </div>
+
+        {/* Primary Controls */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={resetFocusTimer}
+            className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/5"
+            title="Reset Timer"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={toggleFocusTimer}
+            className="px-8 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-cyan-400/20 active:scale-95"
+          >
+            {focusState.isRunning ? (
+              <>
+                <Pause className="w-4 h-4 fill-current" />
+                <span>Pause</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 fill-current" />
+                <span>Start Focus</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={() => setFocusMode(focusState.mode === 'focus' ? 'posture_break' : 'focus')}
+            className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/5"
+            title="Skip Phase"
+          >
+            <SkipForward className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Active Focus Target Pill (quiet and unboxed) */}
+        {activeFocusTarget && (
+          <div className="flex items-center gap-2 p-2 px-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs text-cyan-300 max-w-md">
+            <Target className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate font-medium">{activeFocusTarget.label}</span>
+            <button
+              onClick={() => setActiveFocusTarget(null)}
+              className="ml-auto text-slate-400 hover:text-white p-0.5"
+              title="Clear Target"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Grouped Pomodoro Task & Subtask Management Deck */}
-      <div className="pt-2">
-        <div className="flex items-center justify-between mb-3">
+      {/* 3. Grouped Pomodoro Task & Subtask Management Deck */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase font-mono">
-              SPRINT TARGETS & QUEUES
-            </span>
-            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
-              Grouped Lists & Subtasks
+            <h3 className="text-base font-semibold text-white tracking-tight">
+              Focus Tasks &amp; Subtasks
             </h3>
+            <p className="text-xs text-slate-400">
+              Select any task to set as active Pomodoro sprint target
+            </p>
           </div>
         </div>
 

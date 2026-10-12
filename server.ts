@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import { GoogleGenAI, Type } from '@google/genai';
 
 dotenv.config();
 
@@ -539,6 +540,147 @@ app.post('/api/sync/data', syncLimiter, (req, res) => {
     },
   });
 });
+
+// AI Custom Workout Generator powered by Gemini 3.8 Flash
+app.post('/api/ai/generate-workout', async (req, res) => {
+  const {
+    goal = 'posture',
+    durationMin = 20,
+    fatiguePoint = 'neck',
+    intensity = 'Moderate',
+    equipment = 'Zero Equipment (Home Only)',
+    notes = '',
+  } = req.body || {};
+
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.json({
+        success: true,
+        source: 'local-coach',
+        workout: getSmartFallbackRoutine(goal, durationMin, fatiguePoint, intensity, notes),
+      });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+    const prompt = `You are a world-class biomechanics physiotherapist and elite calisthenics coach.
+Design an athletic, functional, zero-equipment home routine tailored to these questionnaire inputs:
+- Primary Goal: ${goal}
+- Duration: ${durationMin} minutes
+- Current Body Tightness/Fatigue: ${fatiguePoint}
+- Desired Intensity: ${intensity}
+- Equipment: ${equipment}
+- Additional Context: ${notes || 'Sedentary desk fatigue, needing alignment and vitality'}
+
+Requirements:
+1. Target the fatigue point directly with decompression or corrective exercises.
+2. Select 3 to 5 exercises suitable for home without weights.
+3. Provide concise, clear biomechanical tips for each exercise.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            durationMin: { type: Type.INTEGER },
+            intensity: { type: Type.STRING, enum: ['Light', 'Moderate', 'High'] },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            coachingRationale: { type: Type.STRING },
+            exercises: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  sets: { type: Type.INTEGER },
+                  repsOrDuration: { type: Type.STRING },
+                  targetMuscles: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  tips: { type: Type.STRING },
+                },
+                required: ['name', 'sets', 'repsOrDuration', 'targetMuscles', 'tips'],
+              },
+            },
+          },
+          required: ['title', 'durationMin', 'intensity', 'tags', 'coachingRationale', 'exercises'],
+        },
+      },
+    });
+
+    const parsed = JSON.parse(response.text || '{}');
+    return res.json({
+      success: true,
+      source: 'gemini-ai',
+      workout: parsed,
+    });
+  } catch (err: any) {
+    console.warn('Gemini workout generation fallback:', err?.message || err);
+    return res.json({
+      success: true,
+      source: 'local-coach',
+      workout: getSmartFallbackRoutine(goal, durationMin, fatiguePoint, intensity, notes),
+    });
+  }
+});
+
+function getSmartFallbackRoutine(
+  goal: string,
+  durationMin: number,
+  fatiguePoint: string,
+  intensity: string,
+  notes: string
+) {
+  const isNeck = fatiguePoint === 'neck';
+  const isLumbar = fatiguePoint === 'lumbar';
+
+  return {
+    title:
+      goal === 'posture'
+        ? 'Spine Decompression & Posture Realignment'
+        : goal === 'upper'
+        ? 'Upper Calisthenics & Anti-Hunch Strength'
+        : goal === 'lower'
+        ? 'Lower Kinetic Chain & Hip Decompression'
+        : 'Full-Body Metabolic Rhythm (Zero Equipment)',
+    durationMin: Number(durationMin) || 20,
+    intensity: (intensity as 'Light' | 'Moderate' | 'High') || 'Moderate',
+    tags: [goal, fatiguePoint, 'Home Bodyweight'],
+    coachingRationale: `Customized for ${durationMin}m session focusing on ${goal} and relieving ${fatiguePoint} tension without external equipment.`,
+    exercises: [
+      {
+        name: isNeck ? 'Suboccipital Neck Release' : 'Thoracic Spine Twist',
+        sets: 3,
+        repsOrDuration: '45s each side',
+        targetMuscles: ['Cervical Spine', 'Upper Traps', 'Thoracic Cage'],
+        tips: 'Breathe into tight fascial lines. Keep neck and jaw soft.',
+      },
+      {
+        name: 'Bodyweight Deep Squats',
+        sets: 3,
+        repsOrDuration: '12-15 reps',
+        targetMuscles: ['Glutes', 'Adductors', 'Hip Flexors'],
+        tips: 'Full comfortable depth with upright tall posture.',
+      },
+      {
+        name: isLumbar ? 'Hollow Body Hold' : 'Plank Rotations',
+        sets: 3,
+        repsOrDuration: isLumbar ? '30s hold' : '10 reps each side',
+        targetMuscles: ['Transverse Abdominis', 'Obliques', 'Lumbar Stabilizers'],
+        tips: 'Press lower back flush to floor and brace core.',
+      },
+      {
+        name: 'Bodyweight Tricep Dips',
+        sets: 3,
+        repsOrDuration: '12 reps',
+        targetMuscles: ['Triceps', 'Chest', 'Anterior Delts'],
+        tips: 'Retract shoulders and press straight up with control.',
+      },
+    ],
+  };
+}
 
 // System Status / Ping
 app.get('/api/health', (req, res) => {

@@ -1,6 +1,23 @@
-import React from 'react';
-import { Calendar, Dumbbell, History, Play, Clock, Sparkles, Plus, CheckCircle2, Flame, Award, ChevronRight } from 'lucide-react';
-import { useApp, defaultMainWorkout, mobilityFlowWorkout } from '../context/AppContext';
+import React, { useState } from 'react';
+import {
+  Calendar,
+  Dumbbell,
+  History,
+  Play,
+  Clock,
+  Sparkles,
+  CheckCircle2,
+  Flame,
+  Search,
+  ArrowRight,
+  RotateCcw,
+  Wind,
+  ShieldCheck,
+  ChevronRight,
+  Filter,
+} from 'lucide-react';
+import { useApp, defaultMainWorkout, mobilityFlowWorkout, defaultExercises } from '../context/AppContext';
+import { APP_IMAGES } from '../assets/images';
 
 export const MoveScreen: React.FC = () => {
   const {
@@ -13,7 +30,11 @@ export const MoveScreen: React.FC = () => {
     setShowCustomWorkoutBuilder,
     completedWorkoutsCount,
     totalMovementMinutes,
+    settings,
   } = useApp();
+
+  const [exerciseFilter, setExerciseFilter] = useState<'all' | 'upper' | 'lower' | 'core' | 'mobility'>('all');
+  const [exerciseSearch, setExerciseSearch] = useState('');
 
   const daysOfWeek = [
     { day: 'Mon', date: 5, completed: false },
@@ -25,75 +46,168 @@ export const MoveScreen: React.FC = () => {
     { day: 'Sun', date: 11, completed: false },
   ];
 
+  // Comprehensive Exercise Library
+  const exerciseLibrary = [
+    {
+      id: 'lib-squat',
+      name: 'Bodyweight Deep Squats',
+      category: 'lower',
+      sets: 3,
+      reps: '12-15 reps',
+      image: APP_IMAGES.exerciseBodyweightSquat,
+      muscles: ['Quadriceps', 'Glutes', 'Hip Flexors'],
+      tips: 'Keep chest upright, push knees outwards over toes, and descend into comfortable full depth.',
+    },
+    {
+      id: 'lib-thoracic',
+      name: 'Thoracic Spine Twist',
+      category: 'mobility',
+      sets: 3,
+      reps: '45s per side',
+      image: APP_IMAGES.stretchThoracicTwist,
+      muscles: ['Mid-Back', 'Rotators', 'Ribcage'],
+      tips: 'Rotate through upper thoracic cage while keeping lumbar spine and pelvis stable.',
+    },
+    {
+      id: 'lib-neck',
+      name: 'Suboccipital Neck Release',
+      category: 'mobility',
+      sets: 2,
+      reps: '60s hold',
+      image: APP_IMAGES.stretchNeckRelease,
+      muscles: ['Cervical Spine', 'Upper Traps'],
+      tips: 'Gentle passive lateral tilt to reverse screen-gazing tech neck tension.',
+    },
+    {
+      id: 'lib-hollow',
+      name: 'Hollow Body Hold',
+      category: 'core',
+      sets: 3,
+      reps: '30-45s hold',
+      image: APP_IMAGES.exerciseHollowHold,
+      muscles: ['Transverse Abdominis', 'Anterior Core'],
+      tips: 'Press lower back completely flush against the floor, point toes, and brace core.',
+    },
+    {
+      id: 'lib-plank',
+      name: 'Plank Rotations',
+      category: 'core',
+      sets: 3,
+      reps: '10 reps / side',
+      image: APP_IMAGES.exercisePlankRotations,
+      muscles: ['Obliques', 'Shoulders', 'Anti-Rotation'],
+      tips: 'Maintain rigid spinal line from head to heels, rotate arm up, and pause at apex.',
+    },
+    {
+      id: 'lib-dips',
+      name: 'Bodyweight Tricep Dips',
+      category: 'upper',
+      sets: 3,
+      reps: '12 reps',
+      image: APP_IMAGES.exerciseTricepDips,
+      muscles: ['Triceps Brachii', 'Pectorals', 'Anterior Delts'],
+      tips: 'Use chair or bench edge, keep torso upright, and descend until elbows reach 90 degrees.',
+    },
+    {
+      id: 'lib-db-press',
+      name: 'Dumbbell Floor / Bench Press',
+      category: 'upper',
+      sets: 3,
+      reps: '10-12 reps',
+      image: APP_IMAGES.exerciseDbPress,
+      muscles: ['Pectoralis Major', 'Anterior Delts', 'Triceps'],
+      tips: 'Retract scapula, press with controlled 3-second descent, and drive to top.',
+    },
+  ];
+
+  const filteredExercises = exerciseLibrary.filter((ex) => {
+    const matchesCategory = exerciseFilter === 'all' || ex.category === exerciseFilter;
+    const matchesSearch =
+      ex.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
+      ex.muscles.some((m) => m.toLowerCase().includes(exerciseSearch.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
+
+  const weeklyTarget = settings?.weeklyWorkoutGoal || 5;
+
   return (
-    <div className="space-y-6 pb-16 animate-in fade-in duration-300 max-w-7xl mx-auto w-full">
-      {/* Top Header & Subtab Controls */}
+    <div className="space-y-6 pb-16 animate-in fade-in duration-300 max-w-6xl mx-auto w-full">
+      {/* 1. Header Bar & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-        <div className="flex items-center gap-2">
+        {/* Clean Segmented Tab Control */}
+        <div className="flex items-center gap-1 p-1 bg-[#12151e] border border-white/5 rounded-xl self-start">
           <button
             onClick={() => setMoveSubTab('schedule')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               moveSubTab === 'schedule'
-                ? 'bg-[#ff6b4a] text-white shadow-md shadow-[#ff6b4a]/25'
-                : 'bg-[#151922] text-slate-300 border border-white/5 hover:bg-[#1d2330]'
+                ? 'bg-white/10 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
-            <Calendar className="w-3.5 h-3.5" />
+            <Calendar className="w-3.5 h-3.5 text-rose-400" />
             <span>Weekly Schedule</span>
           </button>
 
           <button
             onClick={() => setMoveSubTab('exercises')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               moveSubTab === 'exercises'
-                ? 'bg-[#ff6b4a] text-white shadow-md shadow-[#ff6b4a]/25'
-                : 'bg-[#151922] text-slate-300 border border-white/5 hover:bg-[#1d2330]'
+                ? 'bg-white/10 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
-            <Dumbbell className="w-3.5 h-3.5" />
+            <Dumbbell className="w-3.5 h-3.5 text-cyan-400" />
             <span>Exercise Library</span>
           </button>
 
           <button
             onClick={() => setMoveSubTab('history')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               moveSubTab === 'history'
-                ? 'bg-[#ff6b4a] text-white shadow-md shadow-[#ff6b4a]/25'
-                : 'bg-[#151922] text-slate-300 border border-white/5 hover:bg-[#1d2330]'
+                ? 'bg-white/10 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
-            <History className="w-3.5 h-3.5" />
-            <span>Training Log</span>
+            <History className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Activity Log</span>
           </button>
         </div>
 
+        {/* AI Custom Routine Builder CTA */}
         <button
           onClick={() => setShowCustomWorkoutBuilder(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#ff6b4a]/20 to-[#34d399]/20 hover:from-[#ff6b4a]/30 hover:to-[#34d399]/30 border border-[#ff6b4a]/40 text-xs font-bold text-white transition-all cursor-pointer shadow-sm self-start sm:self-auto"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-semibold text-xs transition-all cursor-pointer shadow-sm self-start sm:self-auto active:scale-95"
         >
-          <Sparkles className="w-3.5 h-3.5 text-[#34d399]" />
-          <span>Questionnaire Routine Builder (Home Only)</span>
+          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+          <span>AI Workout Coach (Custom Routine)</span>
         </button>
       </div>
 
+      {/* 2. Schedule Tab View */}
       {moveSubTab === 'schedule' && (
         <div className="space-y-6">
-          {/* Weekly Interactive Calendar Strip */}
-          <div className="bg-[#141822] border border-white/[0.08] rounded-2xl p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
+          {/* Minimalist Athletic Week Strip */}
+          <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <span className="text-xs font-semibold text-white">May 2025 · Week 19 Rhythm</span>
-                <p className="text-[11px] text-slate-400">Target: 5 weekly sessions with 48h muscle recovery cycle</p>
+                <h3 className="text-sm font-semibold text-white tracking-tight">Weekly Movement Rhythm</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Consistent training rhythm with 48h full muscle recovery windows
+                </p>
               </div>
               <div className="flex items-center gap-3 text-xs">
-                <span className="text-slate-400">Completed: <strong className="text-white font-mono">{completedWorkoutsCount}/5</strong></span>
-                <span className="text-emerald-400 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Rhythm On Track
+                <span className="text-slate-400">
+                  Weekly Goal:{' '}
+                  <strong className="text-white font-mono">{completedWorkoutsCount}/{weeklyTarget}</strong>
+                </span>
+                <span className="text-emerald-400 font-medium flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  {completedWorkoutsCount >= weeklyTarget ? 'Target Achieved' : 'On Track'}
                 </span>
               </div>
             </div>
 
+            {/* 7-day row */}
             <div className="grid grid-cols-7 gap-2">
               {daysOfWeek.map((item) => {
                 const isSelected = selectedDate === item.date;
@@ -101,22 +215,20 @@ export const MoveScreen: React.FC = () => {
                   <button
                     key={item.date}
                     onClick={() => setSelectedDate(item.date)}
-                    className={`flex flex-col items-center justify-center py-3 rounded-xl border transition-all cursor-pointer ${
+                    className={`py-3 px-2 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-[#222838] border-[#ff6b4a] shadow-md shadow-[#ff6b4a]/15 text-white'
-                        : 'bg-[#11141c] border-white/[0.04] hover:bg-[#181d28] text-slate-300'
+                        ? 'bg-rose-500/15 border-rose-500/40 text-white shadow-sm'
+                        : 'bg-[#151923] border-white/5 text-slate-300 hover:bg-white/[0.04]'
                     }`}
                   >
                     <span className="text-[11px] font-medium text-slate-400">{item.day}</span>
-                    <span className="text-base font-bold mt-0.5 font-mono tabular-nums">
-                      {item.date}
-                    </span>
-                    <div className="h-2 mt-1 flex items-center justify-center">
+                    <span className="text-base font-bold font-mono mt-0.5">{item.date}</span>
+                    <div className="h-2 mt-1.5 flex items-center justify-center">
                       {item.completed && (
-                        <span className="w-2 h-2 rounded-full bg-[#34d399]" title="Workout Completed" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Completed" />
                       )}
-                      {item.isToday && (
-                        <span className="w-2 h-2 rounded-full bg-[#ff6b4a]" title="Today" />
+                      {item.isToday && !item.completed && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" title="Today" />
                       )}
                     </div>
                   </button>
@@ -125,221 +237,229 @@ export const MoveScreen: React.FC = () => {
             </div>
           </div>
 
-          {/* Desktop 2-Column Workout Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left 2 Columns: Featured Today Workout & Flow */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Primary Workout Card */}
-              <div className="bg-[#141822] border border-white/[0.08] rounded-2xl p-6 shadow-sm space-y-4 hover:border-[#ff6b4a]/30 transition-all">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#ff6b4a]/15 text-[#ff6b4a] text-xs font-semibold border border-[#ff6b4a]/25">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Recommended Today
-                  </span>
-                  <div className="flex items-center gap-1.5 text-slate-300 text-xs font-mono font-semibold">
-                    <Clock className="w-4 h-4 text-[#ff6b4a]" />
-                    <span>35 min · Moderate</span>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-bold text-white tracking-tight">
-                    {defaultMainWorkout.title}
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Focused hypertrophy sequence targeting pushing mechanics and rotational abdominal stability.
-                  </p>
-                </div>
-
-                {/* Muscle Focus Tags */}
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-2.5 py-1 rounded-md bg-[#1d2331] text-xs font-medium text-slate-300">
-                    Pectoralis Major
-                  </span>
-                  <span className="px-2.5 py-1 rounded-md bg-[#1d2331] text-xs font-medium text-slate-300">
-                    Anterior Deltoids
-                  </span>
-                  <span className="px-2.5 py-1 rounded-md bg-[#1d2331] text-xs font-medium text-slate-300">
-                    Triceps Brachii
-                  </span>
-                  <span className="px-2.5 py-1 rounded-md bg-[#1d2331] text-xs font-medium text-slate-300">
-                    Transverse Abdominis
-                  </span>
-                </div>
-
-                {/* 4 Exercise Thumbnails Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  {defaultMainWorkout.exercises.map((ex) => (
-                    <div
-                      key={ex.id}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-[#181d28] border border-white/5"
-                    >
-                      <img
-                        src={ex.image}
-                        alt={ex.name}
-                        className="w-14 h-14 rounded-lg object-cover shrink-0 bg-[#252b38]"
-                      />
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-white truncate leading-tight">
-                          {ex.name}
-                        </p>
-                        <p className="text-[11px] text-[#ff6b4a] font-medium font-mono mt-0.5">
-                          {ex.sets} sets × {ex.repsOrDuration}
-                        </p>
-                        <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                          {ex.targetMuscles.join(', ')}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Start Session CTA */}
-                <button
-                  onClick={() => startWorkout(defaultMainWorkout)}
-                  className="w-full py-3.5 px-4 rounded-xl bg-[#ff6b4a] hover:bg-[#ff5a36] text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#ff6b4a]/25 transition-all cursor-pointer active:scale-[0.99]"
-                >
-                  <Play className="w-4 h-4 fill-white" />
-                  <span>Launch Workout Guide (Live Tracker)</span>
-                </button>
+          {/* Primary Featured Workout Card */}
+          <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-6 sm:p-7 space-y-5 hover:border-white/10 transition-colors">
+            {/* Top metadata */}
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 text-slate-400">
+                <span className="font-semibold text-rose-400">Today's Scheduled Session</span>
+                <span aria-hidden="true">·</span>
+                <span>{defaultMainWorkout.durationMin} min</span>
+                <span aria-hidden="true">·</span>
+                <span>{defaultMainWorkout.intensity} Intensity</span>
               </div>
-
-              {/* Secondary Workout: Post-Work Mobility Flow */}
-              <div className="bg-[#141822] border border-white/[0.08] rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>15 min · Light Intensity Recovery</span>
-                  </div>
-                  <h4 className="text-base font-bold text-white tracking-tight">
-                    Post-Work Lower Body Mobility Flow
-                  </h4>
-                  <p className="text-xs text-slate-400">
-                    Decompresses hip flexors and unlocks thoracic mobility after prolonged sitting.
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => startWorkout(mobilityFlowWorkout)}
-                  className="px-5 py-2.5 rounded-xl bg-[#1e2535] hover:bg-[#283247] text-xs font-bold text-white border border-white/10 transition-colors shrink-0 cursor-pointer"
-                >
-                  Start Flow →
-                </button>
-              </div>
+              <span className="font-mono text-slate-400 text-[11px]">
+                {defaultMainWorkout.exercises.length} Exercises
+              </span>
             </div>
 
-            {/* Right Column: Micro-Recovery & Bio-Stats */}
-            <div className="space-y-6">
-              {/* Micro-Recovery Card */}
-              <div className="bg-[#141822] border border-white/[0.08] rounded-2xl p-5 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                    MICRO-RECOVERY PAUSE
-                  </span>
-                  <span className="text-xs text-emerald-400 font-medium">5 Min Reset</span>
-                </div>
+            {/* Title & description */}
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                {defaultMainWorkout.title}
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                Hypertrophy and functional calisthenics sequence focusing on upper kinetic pushing power,
+                scapular retraction, and rotational abdominal stability.
+              </p>
+            </div>
 
+            {/* Exercise preview shelf (4 drills) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+              {defaultMainWorkout.exercises.map((ex) => (
+                <div
+                  key={ex.id}
+                  className="bg-[#151923] border border-white/5 rounded-xl p-3 flex flex-col justify-between space-y-3"
+                >
+                  <img
+                    src={ex.image}
+                    alt={ex.name}
+                    className="w-full h-28 rounded-lg object-cover bg-[#1c2230]"
+                  />
+                  <div>
+                    <h4 className="text-xs font-bold text-white truncate">{ex.name}</h4>
+                    <p className="text-[11px] font-mono text-rose-400 font-semibold mt-0.5">
+                      {ex.sets} sets × {ex.repsOrDuration}
+                    </p>
+                    <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                      {ex.targetMuscles.join(', ')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Start Workout Button */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+              <button
+                onClick={() => startWorkout(defaultMainWorkout)}
+                className="w-full sm:w-auto flex-1 py-3 px-6 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20 transition-all cursor-pointer active:scale-98"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>Start Today's Workout</span>
+              </button>
+
+              <button
+                onClick={() => setShowCustomWorkoutBuilder(true)}
+                className="w-full sm:w-auto py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Build with AI Coach</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Recovery & Mobility Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Card 1: 15-min Lower Body Mobility */}
+            <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-5 flex flex-col justify-between space-y-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <span className="text-cyan-400 font-semibold">Recovery Flow</span>
+                  <span aria-hidden="true">·</span>
+                  <span>15 min</span>
+                  <span aria-hidden="true">·</span>
+                  <span>Light</span>
+                </div>
                 <h4 className="text-base font-bold text-white tracking-tight">
-                  Desk Ergonomic Decompression
+                  Post-Work Lower Body Mobility Flow
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Interleaving short mobility intervals during focus sprints restores spinal hydration and improves blood circulation.
+                  Opens tight adductors, lengthens hip flexors, and decompresses the lumbar spine after prolonged sitting.
                 </p>
-
-                <div className="p-3 rounded-xl bg-[#191e2b] border border-white/5 space-y-1 text-xs text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#ff6b4a]" />
-                    <span>Thoracic spine extension</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#ff6b4a]" />
-                    <span>Psoas & hip flexor release</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={openMicroRecovery}
-                  className="w-full py-2.5 px-3 rounded-xl bg-[#ff6b4a]/20 hover:bg-[#ff6b4a]/30 border border-[#ff6b4a]/40 text-[#ff8366] text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Start 5-Min Stretch Guide</span>
-                </button>
               </div>
 
-              {/* Movement Volume Metrics */}
-              <div className="bg-[#141822] border border-white/[0.08] rounded-2xl p-5 shadow-sm space-y-3">
-                <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                  WEEKLY METRICS SUMMARY
-                </span>
+              <button
+                onClick={() => startWorkout(mobilityFlowWorkout)}
+                className="py-2.5 px-4 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer self-start"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Launch Mobility Flow (15m)</span>
+              </button>
+            </div>
 
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div className="p-3 rounded-xl bg-[#191e29] border border-white/5">
-                    <Flame className="w-4 h-4 text-[#ff6b4a] mx-auto mb-1" />
-                    <span className="text-lg font-bold text-white font-mono">{totalMovementMinutes} min</span>
-                    <span className="text-[10px] text-slate-400 block">Total Volume</span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-[#191e29] border border-white/5">
-                    <Award className="w-4 h-4 text-[#34d399] mx-auto mb-1" />
-                    <span className="text-lg font-bold text-white font-mono">1,420 kcal</span>
-                    <span className="text-[10px] text-slate-400 block">Est. Energy Burn</span>
-                  </div>
+            {/* Card 2: 5-min Micro Recovery */}
+            <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-5 flex flex-col justify-between space-y-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <span className="text-emerald-400 font-semibold">Micro-Break</span>
+                  <span aria-hidden="true">·</span>
+                  <span>5 min</span>
+                  <span aria-hidden="true">·</span>
+                  <span>Zero Equipment</span>
                 </div>
+                <h4 className="text-base font-bold text-white tracking-tight">
+                  Desk Posture &amp; Spine Decompression
+                </h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Instant 3-stage protocol with tutorial visuals to release suboccipital neck tightness and restore posture.
+                </p>
               </div>
+
+              <button
+                onClick={openMicroRecovery}
+                className="py-2.5 px-4 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer self-start"
+              >
+                <Wind className="w-3.5 h-3.5" />
+                <span>Start 5m Posture Reset</span>
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Exercises Library View */}
+      {/* 3. Exercise Library Tab */}
       {moveSubTab === 'exercises' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-white">Full Biomechanical Exercise Library</h3>
-              <p className="text-xs text-slate-400">Targeting hypertrophy, core stiffness, and joint mobility</p>
+        <div className="space-y-5 animate-in fade-in duration-200">
+          {/* Search and Category Filters */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={exerciseSearch}
+                onChange={(e) => setExerciseSearch(e.target.value)}
+                placeholder="Search drills by name or muscle group..."
+                className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-[#10131b] border border-white/[0.06] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
+              />
             </div>
-            <span className="text-xs text-slate-400 font-mono">4 Featured Routines</span>
+
+            {/* Muscle Group Filters */}
+            <div className="flex items-center gap-1 p-1 bg-[#10131b] border border-white/[0.06] rounded-xl overflow-x-auto no-scrollbar">
+              {[
+                { id: 'all', label: 'All Drills' },
+                { id: 'upper', label: 'Upper' },
+                { id: 'lower', label: 'Lower' },
+                { id: 'core', label: 'Core' },
+                { id: 'mobility', label: 'Mobility' },
+              ].map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setExerciseFilter(cat.id as any)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                    exerciseFilter === cat.id
+                      ? 'bg-white/10 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
 
+          {/* Exercise Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {defaultMainWorkout.exercises.concat(mobilityFlowWorkout.exercises).map((ex) => (
+            {filteredExercises.map((drill) => (
               <div
-                key={ex.id}
-                className="bg-[#141822] border border-white/[0.08] rounded-2xl p-4 flex flex-col justify-between hover:border-white/20 transition-all space-y-3"
+                key={drill.id}
+                className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-4 flex flex-col justify-between space-y-3 hover:border-white/10 transition-colors"
               >
-                <div>
+                <div className="space-y-3">
                   <img
-                    src={ex.image}
-                    alt={ex.name}
-                    className="w-full h-40 rounded-xl object-cover bg-[#252b38] mb-3"
+                    src={drill.image}
+                    alt={drill.name}
+                    className="w-full h-40 rounded-xl object-cover bg-[#171d28]"
                   />
-                  <div className="flex items-baseline justify-between">
-                    <h4 className="text-base font-bold text-white">{ex.name}</h4>
-                    <span className="text-xs text-[#ff6b4a] font-mono font-bold">{ex.repsOrDuration}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 my-2">
-                    {ex.targetMuscles.map((muscle) => (
-                      <span
-                        key={muscle}
-                        className="text-[10px] bg-[#1d2331] text-slate-300 px-2 py-0.5 rounded-md font-medium"
-                      >
-                        {muscle}
+                  <div>
+                    <div className="flex items-baseline justify-between">
+                      <h4 className="text-sm font-bold text-white">{drill.name}</h4>
+                      <span className="font-mono text-xs font-semibold text-rose-400">
+                        {drill.sets} sets × {drill.reps}
                       </span>
-                    ))}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">{drill.tips}</p>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    {ex.tips}
-                  </p>
                 </div>
 
-                <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between text-xs">
-                  <span className="text-slate-500 font-mono">{ex.sets} Sets Programmed</span>
+                <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="truncate">{drill.muscles.join(' · ')}</span>
                   <button
-                    onClick={() => startWorkout(defaultMainWorkout)}
-                    className="text-[#ff6b4a] hover:underline font-semibold cursor-pointer"
+                    onClick={() =>
+                      startWorkout({
+                        id: `single-${drill.id}`,
+                        title: `${drill.name} Focus Drill`,
+                        durationMin: 10,
+                        intensity: 'Moderate',
+                        tags: [drill.category, 'Focus'],
+                        exercises: [
+                          {
+                            id: drill.id,
+                            name: drill.name,
+                            sets: drill.sets,
+                            repsOrDuration: drill.reps,
+                            image: drill.image,
+                            targetMuscles: drill.muscles,
+                            tips: drill.tips,
+                          },
+                        ],
+                      })
+                    }
+                    className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors cursor-pointer shrink-0"
                   >
-                    Add to Session →
+                    <span>Practice</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -348,48 +468,72 @@ export const MoveScreen: React.FC = () => {
         </div>
       )}
 
-      {/* History Log View */}
+      {/* 4. Activity Log Tab */}
       {moveSubTab === 'history' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-white">Movement & Training Log</h3>
-              <p className="text-xs text-slate-400">Historical performance across hypertrophy and zone 2 aerobic sessions</p>
+        <div className="space-y-5 animate-in fade-in duration-200">
+          {/* Summary Metric Header */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-5">
+              <span className="text-xs text-slate-400">Total Workouts Completed</span>
+              <div className="text-2xl font-bold font-mono text-white mt-1">
+                {completedWorkoutsCount} <span className="text-sm font-sans font-normal text-slate-500">sessions</span>
+              </div>
             </div>
-            <span className="text-xs text-[#34d399] font-medium font-mono">Streak: 4 Consecutive Weeks</span>
+
+            <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-5">
+              <span className="text-xs text-slate-400">Total Movement Time</span>
+              <div className="text-2xl font-bold font-mono text-white mt-1">
+                {totalMovementMinutes} <span className="text-sm font-sans font-normal text-slate-500">minutes</span>
+              </div>
+            </div>
+
+            <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-5">
+              <span className="text-xs text-slate-400">Weekly Goal Progress</span>
+              <div className="text-2xl font-bold font-mono text-emerald-400 mt-1">
+                {Math.round((completedWorkoutsCount / weeklyTarget) * 100)}%
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-5 rounded-2xl bg-[#141822] border border-white/[0.08] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#ff6b4a]">Thu, May 8 · Yesterday</span>
-                <span className="text-xs text-slate-400 font-mono">45 mins · 480 kcal</span>
+          {/* Session Timeline */}
+          <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl divide-y divide-white/[0.04]">
+            <div className="p-4 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Upper Body &amp; Core Power</h4>
+                  <p className="text-[11px] text-slate-400">Yesterday at 04:30 PM · 35 min completed</p>
+                </div>
               </div>
-              <h4 className="text-base font-bold text-white">Posterior Chain & Deadlift Prep</h4>
-              <p className="text-xs text-slate-400">Romanian deadlifts, Bulgarian split squats, hamstring curls</p>
-              <div className="flex items-center gap-3 text-xs text-slate-300 pt-2 border-t border-white/[0.04]">
-                <span className="flex items-center gap-1 text-[#34d399]">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> 4 exercises logged
-                </span>
-                <span>•</span>
-                <span>Avg HR 138 bpm</span>
-              </div>
+              <span className="font-mono text-xs text-emerald-400 font-semibold">+35 min</span>
             </div>
 
-            <div className="p-5 rounded-2xl bg-[#141822] border border-white/[0.08] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#ff6b4a]">Wed, May 7</span>
-                <span className="text-xs text-slate-400 font-mono">30 mins · 310 kcal</span>
+            <div className="p-4 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Post-Work Lower Body Mobility Flow</h4>
+                  <p className="text-[11px] text-slate-400">Wed May 7 · 15 min completed</p>
+                </div>
               </div>
-              <h4 className="text-base font-bold text-white">Zone 2 Aerobic Flush & Core</h4>
-              <p className="text-xs text-slate-400">Stationary bike tempo + hollow holds and bird-dogs</p>
-              <div className="flex items-center gap-3 text-xs text-slate-300 pt-2 border-t border-white/[0.04]">
-                <span className="flex items-center gap-1 text-[#34d399]">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Completed
-                </span>
-                <span>•</span>
-                <span>Recovery score 92%</span>
+              <span className="font-mono text-xs text-emerald-400 font-semibold">+15 min</span>
+            </div>
+
+            <div className="p-4 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Desk Posture &amp; Spinal Decompression</h4>
+                  <p className="text-[11px] text-slate-400">Tue May 6 · 20 min completed</p>
+                </div>
               </div>
+              <span className="font-mono text-xs text-emerald-400 font-semibold">+20 min</span>
             </div>
           </div>
         </div>

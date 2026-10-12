@@ -14,6 +14,7 @@ import { ManualMealModal } from './components/ManualMealModal';
 import { BuildWorkoutModal } from './components/BuildWorkoutModal';
 import { ProfileModal } from './components/ProfileModal';
 import { SettingsModal } from './components/SettingsModal';
+import { FocusSettingsModal } from './components/FocusSettingsModal';
 import { GitHubAuthModal } from './components/GitHubAuthModal';
 import { CommandPaletteModal } from './components/CommandPaletteModal';
 import { SupabaseConnectModal } from './components/SupabaseConnectModal';
@@ -53,6 +54,7 @@ const MainContent: React.FC = () => {
       <BuildWorkoutModal />
       <ProfileModal />
       <SettingsModal />
+      <FocusSettingsModal />
       <GitHubAuthModal />
       <CommandPaletteModal />
       <SupabaseConnectModal
