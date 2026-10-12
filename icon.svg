@@ -1,6 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="128" fill="#080a0f"/>
-  <rect x="16" y="16" width="480" height="480" rx="112" stroke="#34d399" stroke-width="8" stroke-opacity="0.3"/>
-  <path d="M64 280C140 140 220 140 256 256C292 372 372 372 448 232" stroke="#34d399" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="256" cy="256" r="32" fill="#22d3ee" stroke="#34d399" stroke-width="12"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Life App">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FA6D53" />
+      <stop offset="50%" stop-color="#2DD4BF" />
+      <stop offset="100%" stop-color="#4ADE80" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#111316" />
+  <circle cx="256" cy="256" r="132" fill="none" stroke="#333538" stroke-width="34" />
+  <path
+    d="M256 124a132 132 0 0 1 132 132"
+    fill="none"
+    stroke="url(#g)"
+    stroke-width="34"
+    stroke-linecap="round"
+  />
+  <circle cx="256" cy="256" r="34" fill="#F8FAFC" />
 </svg>
