@@ -22,8 +22,8 @@ export const ACCENT: Record<
     soft: 'bg-move-soft',
     border: 'border-move/40',
     ink: 'text-move-ink',
-    glow: 'shadow-[0_0_40px_-10px_rgba(250,109,83,0.45)]',
-    hex: '#FA6D53',
+    glow: 'shadow-[0_0_40px_-10px_rgba(249,115,22,0.45)]',
+    hex: '#F97316',
   },
   focus: {
     text: 'text-focus',
@@ -31,8 +31,8 @@ export const ACCENT: Record<
     soft: 'bg-focus-soft',
     border: 'border-focus/40',
     ink: 'text-focus-ink',
-    glow: 'shadow-[0_0_40px_-10px_rgba(45,212,191,0.45)]',
-    hex: '#2DD4BF',
+    glow: 'shadow-[0_0_40px_-10px_rgba(34,211,238,0.45)]',
+    hex: '#22D3EE',
   },
   nourish: {
     text: 'text-nourish',
@@ -40,7 +40,7 @@ export const ACCENT: Record<
     soft: 'bg-nourish-soft',
     border: 'border-nourish/40',
     ink: 'text-nourish-ink',
-    glow: 'shadow-[0_0_40px_-10px_rgba(74,222,128,0.45)]',
-    hex: '#4ADE80',
+    glow: 'shadow-[0_0_40px_-10px_rgba(52,211,153,0.45)]',
+    hex: '#34D399',
   },
 };

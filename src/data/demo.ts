@@ -69,7 +69,7 @@ export function seedMeals(now = new Date()): MealEntry[] {
 
   const meals: MealEntry[] = [];
   for (let dayOffset = 6; dayOffset >= 0; dayOffset--) {
-    const day = addDays(now, -dayOffset);
+    const day = dayOffset === 0 ? new Date(now) : addDays(now, -dayOffset);
     const dayMeals = [...plan];
     const extra = extras[dayOffset];
     if (extra) dayMeals.splice(1, 0, { name: extra, hour: 16 });
@@ -77,8 +77,16 @@ export function seedMeals(now = new Date()): MealEntry[] {
     for (const entry of dayMeals) {
       const food = FOODS.find((f) => f.name === entry.name) ?? FOODS[0]!;
       const at = new Date(day);
-      at.setHours(entry.hour, 15 + (dayOffset % 3) * 10, 0, 0);
-      // Today's later meals have not happened yet.
+      // Today's: one meal each roughly at late morning, mid-afternoon, and the
+      // most recent hour — clamp under "now" so nothing lands in the future.
+      if (dayOffset === 0) {
+        const anchorHour = Math.max(11, Math.min(now.getHours(), 20));
+        const offsetsByHour: Record<number, number> = { 8: 5, 13: 3, 19: 1 };
+        at.setHours(Math.max(6, anchorHour - (offsetsByHour[entry.hour] ?? 2)), 15, 0, 0);
+      } else {
+        at.setHours(entry.hour, 15 + (dayOffset % 3) * 10, 0, 0);
+      }
+      // Anything later than right now has not happened yet.
       if (at.getTime() > now.getTime()) continue;
       meals.push({
         id: `seed_meal_${dayOffset}_${entry.hour}`,

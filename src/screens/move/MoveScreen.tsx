@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { Settings2 } from 'lucide-react';
-import { ChipTabs } from '../../components/Chip';
-import { CONTAINER, TopBar } from '../../components/TopBar';
-import { IconButton } from '../../components/Button';
+import { AppHeader } from '../../components/AppHeader';
+import { CONTAINER } from '../../components/TopBar';
 import { ScheduleView } from './ScheduleView';
 import { ExercisesView } from './ExercisesView';
 import { HistoryView } from './HistoryView';
-import type { MoveView, SheetKind, Workout } from '../../types';
+import type { MoveView, SheetKind, TabId, Workout } from '../../types';
 
 interface MoveScreenProps {
   onStartWorkout: (workout: Workout) => void;
@@ -17,9 +15,9 @@ interface MoveScreenProps {
 }
 
 const VIEWS: Array<{ id: MoveView; label: string }> = [
-  { id: 'schedule', label: 'Schedule' },
-  { id: 'exercises', label: 'Exercises' },
-  { id: 'history', label: 'History' },
+  { id: 'schedule', label: 'Weekly Schedule' },
+  { id: 'exercises', label: 'Exercise Library' },
+  { id: 'history', label: 'Training Log' },
 ];
 
 export function MoveScreen({
@@ -33,18 +31,35 @@ export function MoveScreen({
 
   return (
     <>
-      <TopBar
-        label="Move"
-        title="Workouts & stretching"
-        right={
-          <IconButton label="Move settings" onClick={() => onOpenSheet({ kind: 'settings' })}>
-            <Settings2 size={19} />
-          </IconButton>
-        }
-      >
-        <ChipTabs items={VIEWS} value={view} onChange={setView} accent="move" />
-      </TopBar>
-      <div className={`${CONTAINER} pb-40 pt-4 lg:pb-16 lg:pt-8`}>
+      <AppHeader
+        title="Movement"
+        onNavigate={(tab: TabId) => tab === 'move' ? undefined : undefined as never}
+        onOpenSettings={() => onOpenSheet({ kind: 'settings' })}
+      />
+      {/* View switcher in the Remix pill style. */}
+      <div className="sticky top-14 z-20 border-b border-line bg-canvas/85 backdrop-blur-xl">
+        <div className={`${CONTAINER} flex flex-wrap items-center gap-2 py-3`}>
+          {VIEWS.map((v) => {
+            const selected = view === v.id;
+            return (
+              <button
+                key={v.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setView(v.id)}
+                className={`rounded-full px-4 py-2 text-[0.8125rem] font-medium transition-colors ${
+                  selected
+                    ? 'bg-move text-move-ink'
+                    : 'border border-line bg-surface text-ink-2 hover:bg-surface-2'
+                }`}
+              >
+                {v.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className={`${CONTAINER} pb-40 pt-5 lg:pb-16`}>
         {view === 'schedule' && (
           <ScheduleView
             onStartWorkout={onStartWorkout}

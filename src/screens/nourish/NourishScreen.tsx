@@ -1,16 +1,9 @@
 import { useState } from 'react';
-import { Settings2 } from 'lucide-react';
-import { ChipTabs } from '../../components/Chip';
-import { CONTAINER, TopBar } from '../../components/TopBar';
-import { IconButton } from '../../components/Button';
+import { AppHeader } from '../../components/AppHeader';
+import { CONTAINER } from '../../components/TopBar';
 import { LogView } from './LogView';
 import { InsightsView } from './InsightsView';
-import type { NourishView, SheetKind } from '../../types';
-
-const VIEWS: Array<{ id: NourishView; label: string }> = [
-  { id: 'log', label: 'Log' },
-  { id: 'insights', label: 'Insights' },
-];
+import type { NourishView, SheetKind, TabId } from '../../types';
 
 export function NourishScreen({
   onOpenSheet,
@@ -23,19 +16,46 @@ export function NourishScreen({
 
   return (
     <>
-      <TopBar
-        label="Nourish"
-        title="Food & health"
-        right={
-          <IconButton label="Nutrition settings" onClick={() => onOpenSheet({ kind: 'settings' })}>
-            <Settings2 size={19} />
-          </IconButton>
-        }
-      >
-        <ChipTabs items={VIEWS} value={view} onChange={setView} accent="nourish" />
-      </TopBar>
-      <div className={`${CONTAINER} pb-40 pt-4 lg:pb-16 lg:pt-8`}>
-        {view === 'log' ? <LogView onOpenMeal={onOpenMeal} /> : <InsightsView onOpenSheet={onOpenSheet} />}
+      <AppHeader
+        title="Fuel"
+        onNavigate={(_tab: TabId) => {
+          /* navigation lives in the sidebar */
+        }}
+        onOpenSettings={() => onOpenSheet({ kind: 'settings' })}
+      />
+      <div className={`${CONTAINER} pb-40 pt-5 lg:pb-16`}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              aria-pressed={view === 'log'}
+              onClick={() => setView('log')}
+              className={`rounded-full px-4 py-2 text-[0.8125rem] font-medium transition-colors ${
+                view === 'log'
+                  ? 'bg-nourish-soft text-nourish ring-1 ring-nourish/40'
+                  : 'border border-line bg-surface text-ink-2 hover:bg-surface-2'
+              }`}
+            >
+              Meal History &amp; Macros
+            </button>
+            <button
+              type="button"
+              aria-pressed={view === 'insights'}
+              onClick={() => setView('insights')}
+              className={`rounded-full px-4 py-2 text-[0.8125rem] font-medium transition-colors ${
+                view === 'insights'
+                  ? 'bg-nourish-soft text-nourish ring-1 ring-nourish/40'
+                  : 'border border-line bg-surface text-ink-2 hover:bg-surface-2'
+              }`}
+            >
+              Circadian Nutrition Insights
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          {view === 'log' ? <LogView onOpenMeal={onOpenMeal} /> : <InsightsView onOpenSheet={onOpenSheet} />}
+        </div>
       </div>
     </>
   );

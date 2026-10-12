@@ -1,63 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
 @import 'tailwindcss';
 
 /*
- * Life App design tokens.
+ * Life App design tokens — "Remix" look.
  *
- * Dark is the primary target; light is a first-class sibling, not a filter.
- * Every surface flips through these variables, so a component only ever
- * references a semantic token (bg-surface, text-ink-2) and stays theme-agnostic.
+ * Near-black canvas, green accent family, a grotesque display face for
+ * headings and a mono face for anything numeric. Light mode stays first-class
+ * through the same variables.
  */
 
 :root,
 [data-theme='dark'] {
-  --canvas: #111316;
-  --surface: #1a1c1f;
-  --surface-2: #1e2023;
-  --surface-3: #282a2d;
-  --surface-4: #333538;
-  --field: #121417;
+  --canvas: #060807;
+  --surface: #0b0e0d;
+  --surface-2: #121614;
+  --surface-3: #1a2320;
+  --surface-4: #223129;
+  --field: #090c0b;
 
-  --ink: #f8fafc;
-  --ink-2: #94a3b8;
-  --ink-3: #64748b;
+  --ink: #f2f5f3;
+  --ink-2: #94a39d;
+  --ink-3: #5d6b64;
 
   --line: rgba(255, 255, 255, 0.07);
-  --line-strong: rgba(255, 255, 255, 0.12);
+  --line-strong: rgba(74, 222, 128, 0.25);
   --track: rgba(255, 255, 255, 0.08);
-  --shadow-color: rgba(0, 0, 0, 0.45);
-  --scrim: rgba(8, 9, 11, 0.72);
+  --shadow-color: rgba(0, 0, 0, 0.55);
+  --scrim: rgba(4, 6, 5, 0.75);
+
+  --move: #f97316;
+  --focus: #22d3ee;
+  --nourish: #34d399;
+  --gold: #fbbf24;
 }
 
 [data-theme='light'] {
-  --canvas: #f6f7f9;
+  --canvas: #f3f6f4;
   --surface: #ffffff;
-  --surface-2: #f2f4f6;
-  --surface-3: #e9ecef;
-  --surface-4: #dde1e6;
-  --field: #f2f4f6;
+  --surface-2: #eef2ef;
+  --surface-3: #e2e9e4;
+  --surface-4: #d3ddd6;
+  --field: #eef2ef;
 
-  --ink: #14161a;
-  --ink-2: #5b6572;
-  --ink-3: #8a94a3;
+  --ink: #101513;
+  --ink-2: #56655e;
+  --ink-3: #87948d;
 
-  --line: rgba(16, 18, 22, 0.08);
-  --line-strong: rgba(16, 18, 22, 0.14);
-  --track: rgba(16, 18, 22, 0.08);
-  --shadow-color: rgba(16, 18, 22, 0.12);
-  --scrim: rgba(240, 242, 245, 0.72);
+  --line: rgba(16, 21, 19, 0.09);
+  --line-strong: rgba(16, 130, 90, 0.3);
+  --track: rgba(16, 21, 19, 0.08);
+  --shadow-color: rgba(16, 21, 19, 0.12);
+  --scrim: rgba(243, 246, 244, 0.75);
+
+  --move: #ea580c;
+  --focus: #0891b2;
+  --nourish: #059669;
+  --gold: #b45309;
 }
 
 /* Module accents are identical in both themes so a module keeps its identity. */
 :root {
-  --move: #fa6d53;
-  --focus: #2dd4bf;
-  --nourish: #4ade80;
-  --move-soft: rgba(250, 109, 83, 0.16);
-  --focus-soft: rgba(45, 212, 191, 0.16);
-  --nourish-soft: rgba(74, 222, 128, 0.16);
-  --move-ink: #1a0D09;
-  --focus-ink: #06231f;
-  --nourish-ink: #08230f;
+  --move-soft: rgba(249, 115, 22, 0.16);
+  --focus-soft: rgba(34, 211, 238, 0.15);
+  --nourish-soft: rgba(52, 211, 153, 0.16);
+  --gold-soft: rgba(251, 191, 36, 0.15);
+  --move-ink: #190b01;
+  --focus-ink: #01191d;
+  --nourish-ink: #01180e;
+  --gold-ink: #1d1200;
 }
 
 @theme inline {
@@ -81,19 +91,24 @@
   --color-move: var(--move);
   --color-focus: var(--focus);
   --color-nourish: var(--nourish);
+  --color-gold: var(--gold);
   --color-move-soft: var(--move-soft);
   --color-focus-soft: var(--focus-soft);
   --color-nourish-soft: var(--nourish-soft);
+  --color-gold-soft: var(--gold-soft);
   --color-move-ink: var(--move-ink);
   --color-focus-ink: var(--focus-ink);
   --color-nourish-ink: var(--nourish-ink);
+  --color-gold-ink: var(--gold-ink);
 
   --font-sans:
     system-ui, -apple-system, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  --radius-card: 1.25rem;
-  --radius-tile: 1rem;
+  --radius-card: 1rem;
+  --radius-tile: 0.875rem;
 
   --animate-rise: rise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-fade: fade 0.2s ease-out both;
@@ -182,7 +197,7 @@
 
   /* One consistent focus ring everywhere, visible against both themes. */
   :focus-visible {
-    outline: 2px solid var(--focus);
+    outline: 2px solid var(--nourish);
     outline-offset: 2px;
     border-radius: 6px;
   }
@@ -200,6 +215,14 @@
       transition-duration: 0.001ms !important;
     }
   }
+}
+
+@utility font-display {
+  font-family: var(--font-display);
+}
+
+@utility font-tech {
+  font-family: var(--font-mono);
 }
 
 @utility no-scrollbar {

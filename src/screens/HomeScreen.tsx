@@ -1,22 +1,42 @@
-import { ArrowRight, Pause, Play, Settings2, Sparkles } from 'lucide-react';
-import { Card, CardHeader, SectionLabel } from '../components/Card';
-import { Button, IconButton } from '../components/Button';
-import { MacroBar } from '../components/Bar';
-import { Ring } from '../components/Ring';
-import { StatPill, Tag } from '../components/Chip';
+import {
+  ArrowRight,
+  Dumbbell,
+  Pause,
+  Play,
+  Plus,
+  Sparkles,
+  Target,
+  UtensilsCrossed,
+} from 'lucide-react';
 import { CONTAINER } from '../components/TopBar';
-import { ACCENT } from '../components/accent';
+import { Button } from '../components/Button';
+import { SectionLabel } from '../components/Card';
+import { MacroBar } from '../components/Bar';
 import { useStore } from '../state/store';
 import type { SheetKind, TabId, Workout } from '../types';
-import { formatClock, formatFocusLength, formatKcal, formatMinutes, pct } from '../lib/format';
-import { dayOfYear, formatFullDate, relativeDayLabel } from '../lib/date';
-import { kcalToday, focusTodayMs, lastMeal, nextWorkout, weekWorkoutStats } from '../lib/selectors';
-import { INSIGHTS } from '../data/insights';
+import { formatClock, formatKcal, formatMinutes, pct } from '../lib/format';
+import { formatFullDate } from '../lib/date';
+import {
+  focusTodayMs,
+  kcalToday,
+  mealsForDay,
+  nextWorkout,
+  weekWorkoutStats,
+} from '../lib/selectors';
+import { formatFocusLength } from '../lib/format';
 
 interface HomeScreenProps {
   onNavigate: (tab: TabId) => void;
   onOpenSheet: (sheet: SheetKind) => void;
   onStartWorkout: (workout: Workout) => void;
+}
+
+function greeting(d: Date): string {
+  const h = d.getHours();
+  if (h < 5) return 'Good night';
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
 }
 
 export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout }: HomeScreenProps) {
@@ -27,262 +47,349 @@ export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout }: HomeScre
   const focusMs = focusTodayMs(state, today);
   const kcal = kcalToday(state, today);
   const upcoming = nextWorkout(state, today);
-  const meal = lastMeal(state);
-  const insight = INSIGHTS[dayOfYear(today) % INSIGHTS.length]!;
+  const todayMeals = mealsForDay(state, today);
 
   const timerRunning = state.timer.status === 'running';
   const timerVisible = state.timer.status !== 'idle';
   const activeTask = state.tasks.find((t) => t.id === state.timer.taskId) ?? null;
-  const modeLabel =
-    state.timer.mode === 'focus'
-      ? 'Focus'
-      : state.timer.mode === 'short'
-        ? 'Short break'
-        : 'Long break';
+
+  const focusLine = timerVisible
+    ? 'Focus sprint active, daily movement on track'
+    : stats.done > 0
+      ? 'Movement logged today — keep the rhythm'
+      : 'Daily movement on track';
 
   return (
     <div className={`${CONTAINER} pb-40 lg:pb-16`}>
-      {/* Date and a gear. No avatar, no greeting banner: the screen is the
-          greeting. */}
-      <div className="flex items-center justify-between pb-4 pt-safe lg:pt-8">
-        <h1 className="pt-4 text-[1.375rem] font-medium leading-7 text-ink lg:pt-0 lg:text-[1.875rem] lg:leading-9">
-          {formatFullDate(today)}
-        </h1>
-        <div className="pt-3 lg:pt-0">
-          <IconButton label="Settings" onClick={() => onOpenSheet({ kind: 'settings' })}>
-            <Settings2 size={19} />
-          </IconButton>
+      {/* Greeting header + Peak Flow replacement: the app's own summary line. */}
+      <div className="pb-8 pt-10">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-[2rem] font-bold leading-tight tracking-tight text-ink lg:text-[2.75rem]">
+              {greeting(today)}, Hazem
+            </h1>
+            <p className="mt-1.5 text-[0.875rem] text-ink-2">
+              {formatFullDate(today)} · {focusLine}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 pt-2 text-[0.75rem] font-medium">
+            <span className="h-1.5 w-1.5 rounded-full bg-nourish" aria-hidden />
+            <span className="text-nourish">Rhythm on track</span>
+          </div>
         </div>
       </div>
 
-      {/* Today at a glance — pills on a phone, three stat cards from tablet up. */}
-      <div className="no-scrollbar -mx-4 flex items-center gap-2 overflow-x-auto px-4 py-0.5 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0">
-        <StatPill
-          accent="move"
-          label="Move"
-          value={`${stats.done} / ${stats.goal}`}
-          hint={`${formatMinutes(stats.minutes)} this week`}
-          onClick={() => onNavigate('move')}
-        />
-        <StatPill
-          accent="focus"
-          label="Focus"
-          value={formatFocusLength(focusMs) || '0m'}
-          hint={timerRunning ? 'Session running now' : 'Logged today'}
-          onClick={() => onNavigate('focus')}
-        />
-        <StatPill
-          accent="nourish"
-          label="Nourish"
-          value={formatKcal(kcal)}
-          hint={`of ${formatKcal(state.settings.dailyCalorieGoal)}`}
-          onClick={() => onNavigate('nourish')}
-        />
-      </div>
-
-      {/*
-       * One card list that reflows into the desktop 8:4 arrangement. Dense
-       * auto-placement keeps the phone order (active, ring, next, insight,
-       * food) exactly as specified while letting the wide layout pair a wide
-       * card with a narrow one on each row.
-       */}
-      <div className="mt-4 grid gap-4 lg:grid-flow-row-dense lg:grid-cols-12 lg:items-start">
-        {timerVisible && (
-          <Card className="relative overflow-hidden lg:col-span-8">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  {timerRunning && (
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-focus opacity-70" />
-                  )}
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-focus" />
-                </span>
-                <span className="text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-focus">
-                  {modeLabel} {timerRunning ? 'running' : 'paused'}
-                </span>
-              </div>
-              <span className="tnum text-[0.6875rem] text-ink-3">
-                {state.timer.completedInCycle} of {state.settings.sessionsBeforeLong} this cycle
-              </span>
-            </div>
-
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="truncate text-[1.0625rem] font-medium text-ink lg:text-[1.25rem]">
-                {activeTask?.name ?? 'Open session'}
-              </h3>
-              <span className="tnum text-[1.25rem] font-semibold tracking-tight text-ink lg:text-[1.875rem]">
-                {formatClock(remainingMs)}
-              </span>
-            </div>
-
-            <div className="mb-4 mt-3 h-1.5 w-full overflow-hidden rounded-full bg-track">
-              <div
-                className="h-full rounded-full bg-focus transition-[width] duration-500"
-                style={{ width: `${progress * 100}%` }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => onNavigate('focus')}
-                className="text-[0.75rem] font-medium text-ink-2"
-              >
-                Open timer
-              </button>
-              <Button
-                size="sm"
-                accent="focus"
-                variant="soft"
-                icon={timerRunning ? <Pause size={14} /> : <Play size={14} />}
-                onClick={() => {
-                  if (timerRunning) dispatch({ type: 'timer/pause', now: Date.now() });
-                  else dispatch({ type: 'timer/start', now: Date.now() });
-                }}
-              >
-                {timerRunning ? 'Pause' : 'Resume'}
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {/* Weekly movement rhythm: one ring, two numbers, no streak shaming. */}
-        <Card className="lg:col-span-4">
-          <div className="flex items-center justify-between gap-4 lg:flex-col lg:items-start lg:gap-5">
-            <div className="min-w-0">
-              <SectionLabel className="mb-1.5 block">Weekly rhythm</SectionLabel>
-              <h3 className="text-[1.0625rem] font-medium text-ink">
-                {stats.done} of {stats.goal} completed
-              </h3>
-              <p className="mt-1 text-[0.75rem] text-ink-2">
-                {formatMinutes(stats.minutes)} total
-                {stats.done >= stats.goal ? (
-                  <span className="text-move"> · goal met</span>
-                ) : (
-                  <span className="text-ink-3"> · {stats.goal - stats.done} to go</span>
-                )}
-              </p>
-            </div>
-            <Ring
-              progress={pct(stats.done, stats.goal)}
-              color={ACCENT.move.hex}
-              size={84}
-              stroke={6}
-              label={`${stats.done} of ${stats.goal} sessions`}
-            >
-              <span className="tnum text-[0.9375rem] font-semibold text-ink">
-                {Math.round(pct(stats.done, stats.goal) * 100)}%
-              </span>
-            </Ring>
+      {/* Three module capability cards. */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* Focus: live timer when active, cycle snapshot when not. */}
+        <section className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
+              <Target size={13} className="text-focus" /> Focus
+            </span>
+            <span className="font-tech text-[0.6875rem] text-ink-3">
+              cycle {state.timer.completedInCycle + 1} of {state.settings.sessionsBeforeLong}
+            </span>
           </div>
-        </Card>
 
-        {/* Up next — one tap to begin. */}
-        {upcoming ? (
-          <Card className="lg:col-span-8">
-            <CardHeader
-              label={upcoming.daysAway === 0 ? 'Up next today' : 'Up next'}
-              action={
-                <span className="text-[0.6875rem] text-ink-3">
-                  {upcoming.daysAway === 0
-                    ? 'Today'
-                    : relativeDayLabel(new Date(`${upcoming.day}T00:00:00`), today)}
-                </span>
-              }
+          {timerVisible ? (
+            <>
+              <p className="font-tech tnum mt-4 text-[2.5rem] font-semibold leading-none tracking-tight text-ink">
+                {formatClock(remainingMs)}
+              </p>
+              <p className="mt-2 text-[0.8125rem] text-ink-2">
+                {activeTask?.name ?? 'Deep Work Sprint'}
+              </p>
+              <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-track">
+                <div
+                  className="h-full rounded-full bg-focus transition-[width] duration-500"
+                  style={{ width: `${progress * 100}%` }}
+                />
+              </div>
+              <div className="mt-5 flex items-center gap-2">
+                <Button
+                  accent="focus"
+                  variant="soft"
+                  size="md"
+                  className="flex-1"
+                  icon={timerRunning ? <Pause size={15} /> : <Play size={15} />}
+                  onClick={() =>
+                    dispatch(
+                      timerRunning
+                        ? { type: 'timer/pause', now: Date.now() }
+                        : { type: 'timer/start', now: Date.now() },
+                    )
+                  }
+                >
+                  {timerRunning ? 'Pause' : 'Resume'}
+                </Button>
+                <Button
+                  accent="focus"
+                  variant="soft"
+                  size="sm"
+                  aria-label="Open the timer"
+                  onClick={() => onNavigate('focus')}
+                >
+                  <ArrowRight size={15} />
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="font-tech tnum mt-4 text-[2.5rem] font-semibold leading-none text-ink">
+                {String(state.settings.pomodoroMin).padStart(2, '0')}:00
+              </p>
+              <p className="mt-2 text-[0.8125rem] text-ink-2">
+                {formatFocusLength(focusMs)} focused today
+              </p>
+              <div className="mt-5 flex items-center gap-2">
+                <Button
+                  accent="focus"
+                  size="md"
+                  className="flex-1"
+                  icon={<Play size={15} />}
+                  onClick={() => onNavigate('focus')}
+                >
+                  Start sprint
+                </Button>
+                <Button
+                  accent="focus"
+                  variant="soft"
+                  size="sm"
+                  aria-label="Open focus module"
+                  onClick={() => onNavigate('focus')}
+                >
+                  <ArrowRight size={15} />
+                </Button>
+              </div>
+            </>
+          )}
+        </section>
+
+        {/* Movement: weekly rhythm + next session. */}
+        <section className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
+              <Dumbbell size={13} className="text-move" /> Movement
+            </span>
+            <span className="font-tech text-[0.6875rem] text-ink-3">
+              {stats.done}/{stats.goal} weekly
+            </span>
+          </div>
+          <p className="mt-4 font-display text-[1.25rem] font-semibold leading-snug text-ink">
+            {upcoming?.workout.name ?? 'Rest day'}
+          </p>
+          <p className="mt-1 text-[0.8125rem] text-ink-2">
+            {upcoming?.workout.durationMin ?? 0} min ·{' '}
+            {upcoming?.workout.items.length ?? 0} exercises
+          </p>
+          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-track">
+            <div
+              className="h-full rounded-full bg-move transition-[width] duration-500"
+              style={{ width: `${pct(stats.done, stats.goal) * 100}%` }}
             />
-            <h3 className="text-[1.0625rem] font-medium text-ink lg:text-[1.25rem]">
-              {upcoming.workout.name}
-            </h3>
-            <div className="mb-4 mt-2.5 flex flex-wrap items-center gap-2">
-              {upcoming.workout.muscles.map((m) => (
-                <Tag key={m}>{m}</Tag>
-              ))}
-              <span className="text-[0.6875rem] text-ink-3">· {upcoming.workout.durationMin} min</span>
-            </div>
-            <Button
-              accent="move"
-              block
-              icon={<Play size={18} />}
-              onClick={() => onStartWorkout(upcoming.workout)}
-              className="lg:w-auto lg:min-w-[220px]"
-            >
-              Start workout
-            </Button>
-          </Card>
-        ) : (
-          <Card className="lg:col-span-8">
-            <CardHeader label="Up next" />
-            <h3 className="text-[1.0625rem] font-medium text-ink">Nothing scheduled</h3>
-            <p className="mt-1.5 text-[0.8125rem] leading-5 text-ink-2">
-              The week is clear. Pick a session when you want one — a rest day is a legitimate plan.
-            </p>
+          </div>
+          <div className="mt-5 flex items-center gap-2">
+            {upcoming && (
+              <Button
+                accent="move"
+                size="md"
+                className="flex-1"
+                icon={<Play size={15} />}
+                onClick={() => onStartWorkout(upcoming.workout)}
+              >
+                Start Workout
+              </Button>
+            )}
             <Button
               accent="move"
               variant="soft"
-              block
-              className="mt-4 lg:w-auto lg:min-w-[220px]"
+              size="sm"
+              aria-label="Open movement module"
               onClick={() => onNavigate('move')}
             >
-              Open the schedule
+              <ArrowRight size={15} />
             </Button>
-          </Card>
-        )}
-
-        {/* One calm line a day, expandable rather than shouted. */}
-        <Card
-          as="button"
-          onClick={() => onOpenSheet({ kind: 'insight' })}
-          ariaLabel="Daily insight"
-          className="lg:col-span-8"
-        >
-          <div className="mb-2 flex items-center gap-2">
-            <Sparkles size={14} className="text-ink-3" />
-            <SectionLabel>Daily insight</SectionLabel>
           </div>
-          <h3 className="text-[0.9375rem] font-medium leading-6 text-ink lg:text-[1.0625rem]">
-            {insight.title}
-          </h3>
-          <p className="mt-1.5 line-clamp-2 text-[0.8125rem] leading-5 text-ink-2 lg:line-clamp-none">
-            {insight.body}
-          </p>
-          <span className="mt-3 inline-flex items-center gap-1 text-[0.75rem] font-medium text-ink-3">
-            Read more <ArrowRight size={13} />
-          </span>
-        </Card>
+        </section>
 
-        {/* Last thing logged, with the macro split at a glance. */}
-        {meal && (
-          <Card
-            as="button"
-            onClick={() => onNavigate('nourish')}
-            ariaLabel="Recent meal"
-            className="lg:col-span-4"
-          >
-            <CardHeader
-              label="Latest fuel"
-              action={
-                <span className="inline-flex items-center gap-1 text-[0.6875rem] text-nourish">
-                  Log details <ArrowRight size={12} />
-                </span>
-              }
-            />
-            <div className="mb-3 flex items-baseline justify-between gap-3">
-              <h4 className="truncate text-[0.9375rem] font-medium text-ink">{meal.name}</h4>
-              <span className="tnum flex-shrink-0 text-[0.8125rem] font-semibold text-ink">
-                {formatKcal(meal.kcal)}
-              </span>
-            </div>
-            <MacroBar protein={meal.macros.protein} carbs={meal.macros.carbs} fat={meal.macros.fat} />
-            <p className="mt-2.5 text-[0.6875rem] text-ink-3">
-              {relativeDayLabel(new Date(meal.createdAt), today)} ·{' '}
-              {new Date(meal.createdAt).toLocaleTimeString(undefined, {
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-            </p>
-          </Card>
-        )}
+        {/* Fuel & Energy: kcal + today's macro split. */}
+        <section className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
+              <UtensilsCrossed size={13} className="text-nourish" /> Fuel &amp; Energy
+            </span>
+            <span className="font-tech text-[0.6875rem] text-ink-3">
+              {Math.round(pct(kcal, state.settings.dailyCalorieGoal) * 100)}% goal
+            </span>
+          </div>
+          <p className="font-tech tnum mt-4 text-[2.5rem] font-semibold leading-none text-ink">
+            {kcal.toLocaleString()}
+          </p>
+          <p className="mt-2 text-[0.8125rem] text-ink-2">
+            <span className="font-tech text-ink-3">/ {state.settings.dailyCalorieGoal.toLocaleString()} kcal</span>{' '}
+            · {todayMeals.length} meal{todayMeals.length === 1 ? '' : 's'} logged today
+          </p>
+          <div className="mt-4">
+            {todayMeals[0] ? (
+              <MacroBar
+                protein={todayMeals[0].macros.protein}
+                carbs={todayMeals[0].macros.carbs}
+                fat={todayMeals[0].macros.fat}
+              />
+            ) : (
+              <div className="h-1.5 w-full rounded-full bg-track" />
+            )}
+          </div>
+          <div className="mt-5 flex items-center gap-2">
+            <Button
+              accent="nourish"
+              variant="soft"
+              size="md"
+              className="flex-1"
+              icon={<Plus size={15} />}
+              onClick={() => onNavigate('nourish')}
+            >
+              Log Meal
+            </Button>
+            <Button
+              accent="nourish"
+              variant="soft"
+              size="sm"
+              aria-label="Open fuel module"
+              onClick={() => onNavigate('nourish')}
+            >
+              <ArrowRight size={15} />
+            </Button>
+          </div>
+        </section>
+      </div>
+
+      {/* Today's Timeline — the day assembled from what already happened and
+          what is queued, chronologically. */}
+      <div className="mt-10 flex items-center justify-between">
+        <h2 className="font-display text-[1.25rem] font-semibold tracking-tight text-ink">
+          Today&apos;s Timeline
+        </h2>
+        <button
+          type="button"
+          onClick={() => onOpenSheet({ kind: 'insight' })}
+          className="flex items-center gap-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:text-ink"
+        >
+          <Sparkles size={14} className="text-focus" /> Launch 5m Posture Reset
+        </button>
+      </div>
+
+      <div className="mt-3 overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
+        <TimelineList
+          onNavigate={onNavigate}
+          onStartWorkout={onStartWorkout}
+        />
       </div>
     </div>
   );
 }
+
+function TimelineList({
+  onNavigate,
+}: {
+  onNavigate: (tab: TabId) => void;
+  onStartWorkout?: (workout: Workout) => void;
+}) {
+  const { state, now } = useStore();
+  const today = new Date(now);
+  const rows: Array<{
+    key: string;
+    time: string;
+    label: string;
+    status: string;
+    statusTone: string;
+    dot: string;
+  }> = [];
+
+  const fmtTime = (at: Date) =>
+    at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  // Already-logged meals, ascending.
+  const mealsToday = state.meals
+    .filter((m) => new Date(m.createdAt).toDateString() === today.toDateString())
+    .sort((a, b) => a.createdAt - b.createdAt);
+
+  for (const meal of mealsToday) {
+    rows.push({
+      key: meal.id,
+      time: fmtTime(new Date(meal.createdAt)),
+      label: meal.name,
+      status: `Logged · ${formatKcal(meal.kcal)}`,
+      statusTone: 'text-ink-3',
+      dot: 'bg-nourish',
+    });
+  }
+
+  const active =
+    state.timer.mode === 'focus' && state.timer.status !== 'idle'
+      ? state.tasks.find((t) => t.id === state.timer.taskId)
+      : null;
+  if (active && state.timer.startedAt) {
+    rows.push({
+      key: active.id,
+      time: fmtTime(new Date(state.timer.startedAt)),
+      label: `Deep Focus Sprint · ${active.name}`,
+      status: 'In Progress',
+      statusTone: 'text-focus',
+      dot: 'bg-focus',
+    });
+  }
+
+  const upcoming = nextWorkout(state, today);
+  if (upcoming && upcoming.daysAway === 0) {
+    rows.push({
+      key: upcoming.workout.id,
+      time: '—',
+      label: upcoming.workout.name,
+      status: `Upcoming · ${upcoming.workout.durationMin} min`,
+      statusTone: 'text-ink-3',
+      dot: 'bg-track',
+    });
+  }
+
+  if (rows.length === 0) {
+    return (
+      <div className="px-5 py-8 text-center">
+        <p className="font-display text-[0.9375rem] font-medium text-ink">A clear day</p>
+        <p className="mt-1 text-[0.8125rem] text-ink-2">
+          Log a meal or start a sprint and it will appear here, in order.
+        </p>
+        <div className="mt-4 flex justify-center gap-2">
+          <Button accent="focus" variant="soft" size="sm" onClick={() => onNavigate('focus')}>
+            Start sprint
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="divide-y divide-line">
+      {rows.map((row) => (
+        <li key={row.key} className="flex items-center gap-4 px-4 py-3.5 md:px-6">
+          <span className="font-tech tnum w-16 flex-shrink-0 text-[0.75rem] text-ink-3">
+            {row.time}
+          </span>
+          <span className={`h-2 w-2 flex-shrink-0 rounded-full ${row.dot}`} aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-[0.875rem] font-medium text-ink">
+            {row.label}
+          </span>
+          <span className={`flex-shrink-0 font-tech text-[0.75rem] ${row.statusTone}`}>
+            {row.status}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// Keep selectors import used even if a branch removes one.
+void kcalToday;
+void formatMinutes;
+void SectionLabel;
