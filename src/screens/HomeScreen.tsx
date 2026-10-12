@@ -1,237 +1,288 @@
-import React from 'react';
-import {
-  Play,
-  Pause,
-  ArrowRight,
-  Plus,
-  Target,
-  Dumbbell,
-  UtensilsCrossed,
-  Sparkles,
-  CheckCircle2,
-} from 'lucide-react';
-import { useApp, defaultMainWorkout } from '../context/AppContext';
-import { CircadianRhythmBanner } from '../components/CircadianRhythmBanner';
+import { ArrowRight, Pause, Play, Settings2, Sparkles } from 'lucide-react';
+import { Card, CardHeader, SectionLabel } from '../components/Card';
+import { Button, IconButton } from '../components/Button';
+import { MacroBar } from '../components/Bar';
+import { Ring } from '../components/Ring';
+import { StatPill, Tag } from '../components/Chip';
+import { CONTAINER } from '../components/TopBar';
+import { ACCENT } from '../components/accent';
+import { useStore } from '../state/store';
+import type { SheetKind, TabId, Workout } from '../types';
+import { formatClock, formatFocusLength, formatKcal, formatMinutes, pct } from '../lib/format';
+import { dayOfYear, formatFullDate, relativeDayLabel } from '../lib/date';
+import { kcalToday, focusTodayMs, lastMeal, nextWorkout, weekWorkoutStats } from '../lib/selectors';
+import { INSIGHTS } from '../data/insights';
 
-export const HomeScreen: React.FC = () => {
-  const {
-    focusState,
-    toggleFocusTimer,
-    setActiveTab,
-    startWorkout,
-    openMicroRecovery,
-    completedWorkoutsCount,
-    totalMovementMinutes,
-    meals,
-    setShowSnapMealModal,
-    settings,
-  } = useApp();
+interface HomeScreenProps {
+  onNavigate: (tab: TabId) => void;
+  onOpenSheet: (sheet: SheetKind) => void;
+  onStartWorkout: (workout: Workout) => void;
+}
 
-  // Format timer MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout }: HomeScreenProps) {
+  const { state, dispatch, remainingMs, progress, now } = useStore();
+  const today = new Date(now);
 
-  const totalCalories = meals.reduce((acc, m) => acc + (m.calories || 0), 0);
-  const targetCalories = settings?.dailyCaloriesGoal || 2400;
-  const weeklyWorkoutTarget = settings?.weeklyWorkoutGoal || 5;
-  const calPercent = Math.min(100, Math.round((totalCalories / targetCalories) * 100));
+  const stats = weekWorkoutStats(state, today);
+  const focusMs = focusTodayMs(state, today);
+  const kcal = kcalToday(state, today);
+  const upcoming = nextWorkout(state, today);
+  const meal = lastMeal(state);
+  const insight = INSIGHTS[dayOfYear(today) % INSIGHTS.length]!;
+
+  const timerRunning = state.timer.status === 'running';
+  const timerVisible = state.timer.status !== 'idle';
+  const activeTask = state.tasks.find((t) => t.id === state.timer.taskId) ?? null;
+  const modeLabel =
+    state.timer.mode === 'focus'
+      ? 'Focus'
+      : state.timer.mode === 'short'
+        ? 'Short break'
+        : 'Long break';
 
   return (
-    <div className="space-y-8 pb-16 animate-in fade-in duration-200 max-w-6xl mx-auto w-full">
-      {/* 1. Breathable, quiet greeting */}
-      <CircadianRhythmBanner />
-
-      {/* 2. Core Habit Cards (3-column grid) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Card 1: Focus */}
-        <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-6 flex flex-col justify-between hover:border-white/10 transition-colors">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span className="flex items-center gap-1.5 font-medium">
-                <Target className="w-3.5 h-3.5 text-cyan-400" />
-                Focus
-              </span>
-              <span className="font-mono text-[11px]">Cycle {focusState.currentCycle} of {settings?.longBreakInterval || 4}</span>
-            </div>
-
-            <div>
-              <div className="text-3xl font-bold font-mono tracking-tight text-white">
-                {formatTime(focusState.secondsRemaining)}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">
-                {focusState.mode === 'focus' ? 'Deep Work Sprint' : 'Restorative Break'}
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-6 flex items-center gap-2">
-            <button
-              onClick={toggleFocusTimer}
-              className="flex-1 py-2 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              {focusState.isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              <span>{focusState.isRunning ? 'Pause' : 'Resume'}</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('focus')}
-              className="p-2 rounded-xl border border-white/5 text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-              title="Open Focus Station"
-            >
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Card 2: Movement */}
-        <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-6 flex flex-col justify-between hover:border-white/10 transition-colors">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span className="flex items-center gap-1.5 font-medium">
-                <Dumbbell className="w-3.5 h-3.5 text-rose-400" />
-                Movement
-              </span>
-              <span className="font-mono text-[11px]">{completedWorkoutsCount}/{weeklyWorkoutTarget} weekly</span>
-            </div>
-
-            <div>
-              <h3 className="text-base font-bold text-white tracking-tight">
-                {defaultMainWorkout.title}
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                {defaultMainWorkout.durationMin} min • {defaultMainWorkout.exercises.length} exercises
-              </p>
-            </div>
-
-            {/* Subtle progress bar */}
-            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-rose-400 rounded-full transition-all duration-300"
-                style={{ width: `${Math.round((completedWorkoutsCount / weeklyWorkoutTarget) * 100)}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="pt-6 flex items-center gap-2">
-            <button
-              onClick={() => startWorkout(defaultMainWorkout)}
-              className="flex-1 py-2 px-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Start Workout</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('move')}
-              className="p-2 rounded-xl border border-white/5 text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-              title="Open Movement Studio"
-            >
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Card 3: Fuel */}
-        <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl p-6 flex flex-col justify-between hover:border-white/10 transition-colors">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span className="flex items-center gap-1.5 font-medium">
-                <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-400" />
-                Fuel &amp; Energy
-              </span>
-              <span className="font-mono text-[11px]">{calPercent}% goal</span>
-            </div>
-
-            <div>
-              <div className="text-3xl font-bold font-mono tracking-tight text-white">
-                {totalCalories.toLocaleString()}{' '}
-                <span className="text-sm font-normal text-slate-400 font-sans">/ {targetCalories} kcal</span>
-              </div>
-              <p className="text-xs text-slate-400 mt-1">
-                {meals.length} meals logged today
-              </p>
-            </div>
-
-            {/* Subtle progress bar */}
-            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-emerald-400 rounded-full transition-all duration-300"
-                style={{ width: `${calPercent}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="pt-6 flex items-center gap-2">
-            <button
-              onClick={() => setShowSnapMealModal(true)}
-              className="flex-1 py-2 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Log Meal</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('nourish')}
-              className="p-2 rounded-xl border border-white/5 text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-              title="Open Fuel Studio"
-            >
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+    <div className={`${CONTAINER} pb-40 lg:pb-16`}>
+      {/* Date and a gear. No avatar, no greeting banner: the screen is the
+          greeting. */}
+      <div className="flex items-center justify-between pb-4 pt-safe lg:pt-8">
+        <h1 className="pt-4 text-[1.375rem] font-medium leading-7 text-ink lg:pt-0 lg:text-[1.875rem] lg:leading-9">
+          {formatFullDate(today)}
+        </h1>
+        <div className="pt-3 lg:pt-0">
+          <IconButton label="Settings" onClick={() => onOpenSheet({ kind: 'settings' })}>
+            <Settings2 size={19} />
+          </IconButton>
         </div>
       </div>
 
-      {/* 3. Today's Clean Rhythm Schedule */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white tracking-tight">Today's Timeline</h3>
-          <button
-            onClick={openMicroRecovery}
-            className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+      {/* Today at a glance — pills on a phone, three stat cards from tablet up. */}
+      <div className="no-scrollbar -mx-4 flex items-center gap-2 overflow-x-auto px-4 py-0.5 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0">
+        <StatPill
+          accent="move"
+          label="Move"
+          value={`${stats.done} / ${stats.goal}`}
+          hint={`${formatMinutes(stats.minutes)} this week`}
+          onClick={() => onNavigate('move')}
+        />
+        <StatPill
+          accent="focus"
+          label="Focus"
+          value={formatFocusLength(focusMs) || '0m'}
+          hint={timerRunning ? 'Session running now' : 'Logged today'}
+          onClick={() => onNavigate('focus')}
+        />
+        <StatPill
+          accent="nourish"
+          label="Nourish"
+          value={formatKcal(kcal)}
+          hint={`of ${formatKcal(state.settings.dailyCalorieGoal)}`}
+          onClick={() => onNavigate('nourish')}
+        />
+      </div>
+
+      {/*
+       * One card list that reflows into the desktop 8:4 arrangement. Dense
+       * auto-placement keeps the phone order (active, ring, next, insight,
+       * food) exactly as specified while letting the wide layout pair a wide
+       * card with a narrow one on each row.
+       */}
+      <div className="mt-4 grid gap-4 lg:grid-flow-row-dense lg:grid-cols-12 lg:items-start">
+        {timerVisible && (
+          <Card className="relative overflow-hidden lg:col-span-8">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  {timerRunning && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-focus opacity-70" />
+                  )}
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-focus" />
+                </span>
+                <span className="text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-focus">
+                  {modeLabel} {timerRunning ? 'running' : 'paused'}
+                </span>
+              </div>
+              <span className="tnum text-[0.6875rem] text-ink-3">
+                {state.timer.completedInCycle} of {state.settings.sessionsBeforeLong} this cycle
+              </span>
+            </div>
+
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="truncate text-[1.0625rem] font-medium text-ink lg:text-[1.25rem]">
+                {activeTask?.name ?? 'Open session'}
+              </h3>
+              <span className="tnum text-[1.25rem] font-semibold tracking-tight text-ink lg:text-[1.875rem]">
+                {formatClock(remainingMs)}
+              </span>
+            </div>
+
+            <div className="mb-4 mt-3 h-1.5 w-full overflow-hidden rounded-full bg-track">
+              <div
+                className="h-full rounded-full bg-focus transition-[width] duration-500"
+                style={{ width: `${progress * 100}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => onNavigate('focus')}
+                className="text-[0.75rem] font-medium text-ink-2"
+              >
+                Open timer
+              </button>
+              <Button
+                size="sm"
+                accent="focus"
+                variant="soft"
+                icon={timerRunning ? <Pause size={14} /> : <Play size={14} />}
+                onClick={() => {
+                  if (timerRunning) dispatch({ type: 'timer/pause', now: Date.now() });
+                  else dispatch({ type: 'timer/start', now: Date.now() });
+                }}
+              >
+                {timerRunning ? 'Pause' : 'Resume'}
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Weekly movement rhythm: one ring, two numbers, no streak shaming. */}
+        <Card className="lg:col-span-4">
+          <div className="flex items-center justify-between gap-4 lg:flex-col lg:items-start lg:gap-5">
+            <div className="min-w-0">
+              <SectionLabel className="mb-1.5 block">Weekly rhythm</SectionLabel>
+              <h3 className="text-[1.0625rem] font-medium text-ink">
+                {stats.done} of {stats.goal} completed
+              </h3>
+              <p className="mt-1 text-[0.75rem] text-ink-2">
+                {formatMinutes(stats.minutes)} total
+                {stats.done >= stats.goal ? (
+                  <span className="text-move"> · goal met</span>
+                ) : (
+                  <span className="text-ink-3"> · {stats.goal - stats.done} to go</span>
+                )}
+              </p>
+            </div>
+            <Ring
+              progress={pct(stats.done, stats.goal)}
+              color={ACCENT.move.hex}
+              size={84}
+              stroke={6}
+              label={`${stats.done} of ${stats.goal} sessions`}
+            >
+              <span className="tnum text-[0.9375rem] font-semibold text-ink">
+                {Math.round(pct(stats.done, stats.goal) * 100)}%
+              </span>
+            </Ring>
+          </div>
+        </Card>
+
+        {/* Up next — one tap to begin. */}
+        {upcoming ? (
+          <Card className="lg:col-span-8">
+            <CardHeader
+              label={upcoming.daysAway === 0 ? 'Up next today' : 'Up next'}
+              action={
+                <span className="text-[0.6875rem] text-ink-3">
+                  {upcoming.daysAway === 0
+                    ? 'Today'
+                    : relativeDayLabel(new Date(`${upcoming.day}T00:00:00`), today)}
+                </span>
+              }
+            />
+            <h3 className="text-[1.0625rem] font-medium text-ink lg:text-[1.25rem]">
+              {upcoming.workout.name}
+            </h3>
+            <div className="mb-4 mt-2.5 flex flex-wrap items-center gap-2">
+              {upcoming.workout.muscles.map((m) => (
+                <Tag key={m}>{m}</Tag>
+              ))}
+              <span className="text-[0.6875rem] text-ink-3">· {upcoming.workout.durationMin} min</span>
+            </div>
+            <Button
+              accent="move"
+              block
+              icon={<Play size={18} />}
+              onClick={() => onStartWorkout(upcoming.workout)}
+              className="lg:w-auto lg:min-w-[220px]"
+            >
+              Start workout
+            </Button>
+          </Card>
+        ) : (
+          <Card className="lg:col-span-8">
+            <CardHeader label="Up next" />
+            <h3 className="text-[1.0625rem] font-medium text-ink">Nothing scheduled</h3>
+            <p className="mt-1.5 text-[0.8125rem] leading-5 text-ink-2">
+              The week is clear. Pick a session when you want one — a rest day is a legitimate plan.
+            </p>
+            <Button
+              accent="move"
+              variant="soft"
+              block
+              className="mt-4 lg:w-auto lg:min-w-[220px]"
+              onClick={() => onNavigate('move')}
+            >
+              Open the schedule
+            </Button>
+          </Card>
+        )}
+
+        {/* One calm line a day, expandable rather than shouted. */}
+        <Card
+          as="button"
+          onClick={() => onOpenSheet({ kind: 'insight' })}
+          ariaLabel="Daily insight"
+          className="lg:col-span-8"
+        >
+          <div className="mb-2 flex items-center gap-2">
+            <Sparkles size={14} className="text-ink-3" />
+            <SectionLabel>Daily insight</SectionLabel>
+          </div>
+          <h3 className="text-[0.9375rem] font-medium leading-6 text-ink lg:text-[1.0625rem]">
+            {insight.title}
+          </h3>
+          <p className="mt-1.5 line-clamp-2 text-[0.8125rem] leading-5 text-ink-2 lg:line-clamp-none">
+            {insight.body}
+          </p>
+          <span className="mt-3 inline-flex items-center gap-1 text-[0.75rem] font-medium text-ink-3">
+            Read more <ArrowRight size={13} />
+          </span>
+        </Card>
+
+        {/* Last thing logged, with the macro split at a glance. */}
+        {meal && (
+          <Card
+            as="button"
+            onClick={() => onNavigate('nourish')}
+            ariaLabel="Recent meal"
+            className="lg:col-span-4"
           >
-            <Sparkles className="w-3 h-3 text-cyan-400" />
-            <span>Launch 5m Posture Reset</span>
-          </button>
-        </div>
-
-        <div className="bg-[#10131b] border border-white/[0.06] rounded-2xl divide-y divide-white/[0.04] text-xs">
-          <div className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-slate-400 text-[11px] w-16">08:30 AM</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span className="font-medium text-white">Wild Salmon Quinoa Bowl</span>
+            <CardHeader
+              label="Latest fuel"
+              action={
+                <span className="inline-flex items-center gap-1 text-[0.6875rem] text-nourish">
+                  Log details <ArrowRight size={12} />
+                </span>
+              }
+            />
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <h4 className="truncate text-[0.9375rem] font-medium text-ink">{meal.name}</h4>
+              <span className="tnum flex-shrink-0 text-[0.8125rem] font-semibold text-ink">
+                {formatKcal(meal.kcal)}
+              </span>
             </div>
-            <span className="text-slate-400">Logged · 580 kcal</span>
-          </div>
-
-          <div className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-slate-400 text-[11px] w-16">10:00 AM</span>
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span className="font-medium text-white">Deep Focus Sprint · Cycle 2</span>
-            </div>
-            <span className="text-cyan-400 font-medium">In Progress</span>
-          </div>
-
-          <div className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-slate-400 text-[11px] w-16">02:00 PM</span>
-              <span className="w-2 h-2 rounded-full bg-slate-600" />
-              <span className="font-medium text-slate-300">Upper Body Hypertrophy Routine</span>
-            </div>
-            <span className="text-slate-500">Upcoming · 35 min</span>
-          </div>
-
-          <div className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-slate-400 text-[11px] w-16">05:00 PM</span>
-              <span className="w-2 h-2 rounded-full bg-slate-600" />
-              <span className="font-medium text-slate-300">5-Min Desk Mobility &amp; Spine Decompression</span>
-            </div>
-            <span className="text-slate-500">Upcoming · 5 min</span>
-          </div>
-        </div>
+            <MacroBar protein={meal.macros.protein} carbs={meal.macros.carbs} fat={meal.macros.fat} />
+            <p className="mt-2.5 text-[0.6875rem] text-ink-3">
+              {relativeDayLabel(new Date(meal.createdAt), today)} ·{' '}
+              {new Date(meal.createdAt).toLocaleTimeString(undefined, {
+                hour: 'numeric',
+                minute: '2-digit',
+              })}
+            </p>
+          </Card>
+        )}
       </div>
     </div>
   );
-};
+}

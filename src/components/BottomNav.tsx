@@ -1,77 +1,104 @@
-import React from 'react';
-import { Home, Dumbbell, Timer } from 'lucide-react';
-import { TabType } from '../types';
-import { useApp } from '../context/AppContext';
+import { Dumbbell, House, Leaf, Timer } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import type { TabId } from '../types';
 
-export const BottomNav: React.FC = () => {
-  const { activeTab, setActiveTab } = useApp();
+interface NavItem {
+  id: TabId;
+  label: string;
+  icon: LucideIcon;
+  /** Active colour and glow are driven by the module's own accent. */
+  activeClass: string;
+  glow: string;
+}
 
-  const navItems: { id: TabType; label: string; icon: React.ReactNode }[] = [
-    {
-      id: 'home',
-      label: 'Home',
-      icon: <Home className="w-5 h-5 stroke-[2]" />,
-    },
-    {
-      id: 'move',
-      label: 'Move',
-      icon: <Dumbbell className="w-5 h-5 stroke-[2]" />,
-    },
-    {
-      id: 'focus',
-      label: 'Focus',
-      icon: <Timer className="w-5 h-5 stroke-[2]" />,
-    },
-    {
-      id: 'nourish',
-      label: 'Nourish',
-      icon: (
-        // Stylized lotus / leaf icon matching the design
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 21a9 9 0 0 0 9-9c0-4.97-4.03-9-9-9-4.97 0-9 4.03-9 9a9 9 0 0 0 9 9Z" className="opacity-0" />
-          <path d="M12 21V9" />
-          <path d="M12 9c-3 0-6 2.5-6 6a6 6 0 0 0 6 6" />
-          <path d="M12 9c3 0 6 2.5 6 6a6 6 0 0 1-6 6" />
-          <path d="M12 3c-1.5 2-2 3.5-2 5h4c0-1.5-.5-3-2-5Z" />
-        </svg>
-      ),
-    },
-  ];
+const ITEMS: NavItem[] = [
+  {
+    id: 'home',
+    label: 'Home',
+    icon: House,
+    activeClass: 'text-ink',
+    glow: 'bg-ink',
+  },
+  {
+    id: 'move',
+    label: 'Move',
+    icon: Dumbbell,
+    activeClass: 'text-move',
+    glow: 'bg-move',
+  },
+  {
+    id: 'focus',
+    label: 'Focus',
+    icon: Timer,
+    activeClass: 'text-focus',
+    glow: 'bg-focus',
+  },
+  {
+    id: 'nourish',
+    label: 'Nourish',
+    icon: Leaf,
+    activeClass: 'text-nourish',
+    glow: 'bg-nourish',
+  },
+];
 
+interface BottomNavProps {
+  active: TabId;
+  onChange: (tab: TabId) => void;
+  /** Labels show for the first week, then fade to icon-only. */
+  showLabels: boolean;
+}
+
+export function BottomNav({ active, onChange, showLabels }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0a0c10]/95 backdrop-blur-lg border-t border-white/[0.06] pb-safe">
-      <div className="max-w-md mx-auto grid grid-cols-4 h-16 items-center px-2">
-        {navItems.map((item) => {
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center py-1 transition-colors group relative ${
-                isActive ? 'text-white' : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              <div
-                className={`transition-transform duration-150 ${
-                  isActive ? 'scale-110 text-white' : 'group-hover:scale-105'
-                }`}
-              >
-                {item.icon}
-              </div>
-              <span
-                className={`text-[11px] font-medium tracking-tight mt-1 transition-colors ${
-                  isActive ? 'text-white font-semibold' : 'text-slate-400'
-                }`}
-              >
-                {item.label}
-              </span>
-              {isActive && (
-                <span className="absolute -top-[1px] w-8 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/80 to-transparent" />
-              )}
-            </button>
-          );
-        })}
+    <nav
+      aria-label="Primary"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 pb-safe lg:hidden"
+    >
+      <div className="mx-4 mb-3 rounded-[1.6rem] border border-line bg-surface/90 shadow-[0_12px_40px_-12px_var(--shadow-color)] backdrop-blur-xl pointer-events-auto">
+        <ul className="flex items-stretch">
+          {ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = active === item.id;
+            return (
+              <li key={item.id} className="flex-1">
+                <button
+                  type="button"
+                  onClick={() => onChange(item.id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className="thumb-zone relative flex w-full flex-col items-center gap-1 rounded-[1.6rem] px-2 py-2.5 transition-opacity active:opacity-70"
+                >
+                  <span className="relative flex h-6 items-center justify-center">
+                    <Icon
+                      size={22}
+                      strokeWidth={isActive ? 2.2 : 1.75}
+                      className={isActive ? item.activeClass : 'text-ink-3'}
+                      aria-hidden
+                    />
+                    {isActive && (
+                      <span
+                        className={`absolute -bottom-1.5 h-1 w-1 rounded-full ${item.glow}`}
+                        aria-hidden
+                      />
+                    )}
+                  </span>
+                  <span
+                    className={`text-[0.6875rem] font-medium leading-none tracking-[0.03em] transition-all duration-300 ${
+                      isActive ? item.activeClass : 'text-ink-3'
+                    } ${
+                      showLabels
+                        ? 'max-h-4 opacity-100'
+                        : 'max-h-0 overflow-hidden opacity-0'
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </nav>
   );
-};
+}

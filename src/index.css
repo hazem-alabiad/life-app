@@ -1,33 +1,231 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-@layer base {
-  body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: #0d0f14;
-    color: #f3f4f6;
+/*
+ * Life App design tokens.
+ *
+ * Dark is the primary target; light is a first-class sibling, not a filter.
+ * Every surface flips through these variables, so a component only ever
+ * references a semantic token (bg-surface, text-ink-2) and stays theme-agnostic.
+ */
+
+:root,
+[data-theme='dark'] {
+  --canvas: #111316;
+  --surface: #1a1c1f;
+  --surface-2: #1e2023;
+  --surface-3: #282a2d;
+  --surface-4: #333538;
+  --field: #121417;
+
+  --ink: #f8fafc;
+  --ink-2: #94a3b8;
+  --ink-3: #64748b;
+
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.12);
+  --track: rgba(255, 255, 255, 0.08);
+  --shadow-color: rgba(0, 0, 0, 0.45);
+  --scrim: rgba(8, 9, 11, 0.72);
+}
+
+[data-theme='light'] {
+  --canvas: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f2f4f6;
+  --surface-3: #e9ecef;
+  --surface-4: #dde1e6;
+  --field: #f2f4f6;
+
+  --ink: #14161a;
+  --ink-2: #5b6572;
+  --ink-3: #8a94a3;
+
+  --line: rgba(16, 18, 22, 0.08);
+  --line-strong: rgba(16, 18, 22, 0.14);
+  --track: rgba(16, 18, 22, 0.08);
+  --shadow-color: rgba(16, 18, 22, 0.12);
+  --scrim: rgba(240, 242, 245, 0.72);
+}
+
+/* Module accents are identical in both themes so a module keeps its identity. */
+:root {
+  --move: #fa6d53;
+  --focus: #2dd4bf;
+  --nourish: #4ade80;
+  --move-soft: rgba(250, 109, 83, 0.16);
+  --focus-soft: rgba(45, 212, 191, 0.16);
+  --nourish-soft: rgba(74, 222, 128, 0.16);
+  --move-ink: #1a0D09;
+  --focus-ink: #06231f;
+  --nourish-ink: #08230f;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-field: var(--field);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-track: var(--track);
+  --color-scrim: var(--scrim);
+  --shadow-color: var(--shadow-color);
+
+  --color-move: var(--move);
+  --color-focus: var(--focus);
+  --color-nourish: var(--nourish);
+  --color-move-soft: var(--move-soft);
+  --color-focus-soft: var(--focus-soft);
+  --color-nourish-soft: var(--nourish-soft);
+  --color-move-ink: var(--move-ink);
+  --color-focus-ink: var(--focus-ink);
+  --color-nourish-ink: var(--nourish-ink);
+
+  --font-sans:
+    system-ui, -apple-system, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+
+  --radius-card: 1.25rem;
+  --radius-tile: 1rem;
+
+  --animate-rise: rise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade: fade 0.2s ease-out both;
+  --animate-breathe: breathe 4.5s ease-in-out infinite;
+  --animate-sweep: sweep 1.6s ease-in-out infinite;
+  --animate-orbit: orbit 12s linear infinite;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Custom scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #11141a;
-}
-::-webkit-scrollbar-thumb {
-  background: #232834;
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #333a4c;
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.985);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
-.no-scrollbar {
-  -ms-overflow-style: none;
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    background-color: var(--canvas);
+    /* Text scales with the system setting rather than being locked to px. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 20px;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* One consistent focus ring everywhere, visible against both themes. */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@utility no-scrollbar {
   scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility tnum {
+  /* Stops timer and stat digits from jittering as values change. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+@utility pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+}
+
+@utility pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 0px);
+}
+
+@utility thumb-zone {
+  /* Everything important stays inside reach of one thumb. */
+  min-height: 44px;
+  min-width: 44px;
 }
