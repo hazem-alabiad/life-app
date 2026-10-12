@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+            (function() {
+              if (typeof window === 'undefined') return;
+              var NativeWS = window.WebSocket;
+              if (NativeWS) {
+                window.WebSocket = function(url, protocols) {
+                  var isVite = protocols === 'vite-hmr' || (Array.isArray(protocols) && protocols.indexOf('vite-hmr') !== -1) || (typeof url === 'string' && url.indexOf('vite-hmr') !== -1);
+                  if (isVite) {
+                    var target = new EventTarget();
+                    return {
+                      readyState: 1,
+                      CONNECTING: 0,
+                      OPEN: 1,
+                      CLOSING: 2,
+                      CLOSED: 3,
+                      url: String(url),
+                      protocol: 'vite-hmr',
+                      bufferedAmount: 0,
+                      extensions: '',
+                      binaryType: 'blob',
+                      send: function() {},
+                      close: function() {},
+                      addEventListener: target.addEventListener.bind(target),
+                      removeEventListener: target.removeEventListener.bind(target),
+                      dispatchEvent: target.dispatchEvent.bind(target),
+                      onopen: null,
+                      onclose: null,
+                      onerror: null,
+                      onmessage: null
+                    };
+                  }
+                  return new NativeWS(url, protocols);
+                };
+                window.WebSocket.prototype = NativeWS.prototype;
+                window.WebSocket.CONNECTING = NativeWS.CONNECTING;
+                window.WebSocket.OPEN = NativeWS.OPEN;
+                window.WebSocket.CLOSING = NativeWS.CLOSING;
+                window.WebSocket.CLOSED = NativeWS.CLOSED;
+              }
+              var origErr = console.error;
+              console.error = function() {
+                var args = Array.prototype.slice.call(arguments);
+                var text = args.map(function(a) { return typeof a === 'object' && a !== null ? (a.message || JSON.stringify(a)) : String(a); }).join(' ');
+                if (text.indexOf('WebSocket closed without opened') !== -1 || text.indexOf('failed to connect to websocket') !== -1) {
+                  return;
+                }
+                origErr.apply(console, args);
+              };
+              window.addEventListener('error', function(e) {
+                if (e && e.message && e.message.indexOf('WebSocket') !== -1) {
+                  e.stopImmediatePropagation();
+                  e.preventDefault();
+                }
+              }, true);
+            })();
+          </script>
+
+    <meta charset="UTF-8" />
+    <script>
+      // Suppress Vite HMR WebSocket failure in AI Studio cloud preview environment
+      (function() {
+        if (typeof window === 'undefined') return;
+        const OriginalWebSocket = window.WebSocket;
+        if (OriginalWebSocket) {
+          window.WebSocket = function(url, protocols) {
+            const isViteHmr = protocols === 'vite-hmr' || (Array.isArray(protocols) && protocols.includes('vite-hmr')) || (typeof url === 'string' && url.includes('vite-hmr'));
+            if (isViteHmr) {
+              const target = new EventTarget();
+              const dummyWs = {
+                readyState: 1, // WebSocket.OPEN
+                CONNECTING: 0,
+                OPEN: 1,
+                CLOSING: 2,
+                CLOSED: 3,
+                url: String(url),
+                protocol: 'vite-hmr',
+                bufferedAmount: 0,
+                extensions: '',
+                binaryType: 'blob',
+                send: function() {},
+                close: function() {},
+                addEventListener: target.addEventListener.bind(target),
+                removeEventListener: target.removeEventListener.bind(target),
+                dispatchEvent: target.dispatchEvent.bind(target),
+                onopen: null,
+                onclose: null,
+                onerror: null,
+                onmessage: null,
+              };
+              return dummyWs;
+            }
+            return new OriginalWebSocket(url, protocols);
+          };
+          window.WebSocket.prototype = OriginalWebSocket.prototype;
+          window.WebSocket.CONNECTING = OriginalWebSocket.CONNECTING;
+          window.WebSocket.OPEN = OriginalWebSocket.OPEN;
+          window.WebSocket.CLOSING = OriginalWebSocket.CLOSING;
+          window.WebSocket.CLOSED = OriginalWebSocket.CLOSED;
+        }
+
+        const origError = console.error;
+        console.error = function(...args) {
+          const msg = args.map(a => (typeof a === 'object' && a !== null ? (a.message || JSON.stringify(a)) : String(a))).join(' ');
+          if (msg.includes('WebSocket closed without opened') || msg.includes('failed to connect to websocket')) {
+            return;
+          }
+          origError.apply(console, args);
+        };
+
+        window.addEventListener('error', function(event) {
+          if (event && event.message && (event.message.includes('WebSocket closed without opened') || event.message.includes('WebSocket'))) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+          }
+        }, true);
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Remix Life App - Rhythmic Wellness &amp; Habit Tracker</title>
+    <meta name="description" content="Holistic rhythm tracking across movement, deep focus sprints, and mindful nourishment." />
+    <meta property="og:title" content="Remix Life App - Rhythmic Wellness &amp; Habit Tracker" />
+    <meta property="og:description" content="Holistic rhythm tracking across movement, deep focus sprints, and mindful nourishment." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#080a0f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Life OS" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="./assets/index-ChhXoaoS.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Dk8p0dM_.css">
+  <link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
+  <body class="bg-[#0f1115] text-[#f3f4f6] antialiased selection:bg-[#34d399]/20 selection:text-white">
+    <div id="root"></div>
+  </body>
+</html>
+
