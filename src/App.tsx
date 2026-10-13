@@ -4,27 +4,21 @@ import { AppHeader } from './components/AppHeader';
 import { HomeScreen } from './screens/HomeScreen';
 import { MoveScreen } from './screens/move/MoveScreen';
 import { FocusScreen } from './screens/focus/FocusScreen';
-import { NourishScreen } from './screens/nourish/NourishScreen';
 import { WorkoutSession } from './screens/move/WorkoutSession';
 import { StretchFlow } from './screens/move/StretchFlow';
 import { ExerciseSheet } from './screens/sheets/ExerciseSheet';
 import { WorkoutBuilderSheet } from './screens/sheets/WorkoutBuilderSheet';
 import { FocusSettingsSheet } from './screens/sheets/FocusSettingsSheet';
 import { AddTaskSheet } from './screens/sheets/AddTaskSheet';
-import { MealSheet } from './screens/sheets/MealSheet';
-import { RecipeSheet } from './screens/sheets/RecipeSheet';
 import { InsightSheet } from './screens/sheets/InsightSheet';
 import { SettingsSheet } from './screens/sheets/SettingsSheet';
-import { useStore } from './state/store';
 import { getExercise } from './data/exercises';
-import { RECIPES } from './data/insights';
 import type { SheetKind, TabId, Workout } from './types';
 
 const TITLES: Record<TabId, string> = {
   home: 'Today',
   move: 'Movement',
   focus: 'Focus',
-  nourish: 'Fuel',
 };
 
 export function App() {
@@ -95,12 +89,6 @@ export function App() {
             />
           )}
           {tab === 'focus' && <FocusScreen onOpenSheet={setSheet} />}
-          {tab === 'nourish' && (
-            <NourishScreen
-              onOpenSheet={setSheet}
-              onOpenMeal={(mealId) => setSheet({ kind: 'meal', mealId })}
-            />
-          )}
         </main>
 
         {!session && !stretchOpen && <BottomNav active={tab} onChange={go} />}
@@ -155,7 +143,6 @@ function Sheets({
   onClose: () => void;
   onOpenSheet: (sheet: SheetKind) => void;
 }) {
-  const { state } = useStore();
   if (!sheet) return null;
 
   switch (sheet.kind) {
@@ -168,15 +155,6 @@ function Sheets({
       return <FocusSettingsSheet onClose={onClose} />;
     case 'add-task':
       return <AddTaskSheet onClose={onClose} />;
-    case 'meal': {
-      const meal = state.meals.find((m) => m.id === sheet.mealId);
-      if (!meal) return null;
-      return <MealSheet meal={meal} onClose={onClose} />;
-    }
-    case 'recipe': {
-      const recipe = RECIPES.find((r) => r.id === sheet.recipeId) ?? RECIPES[0]!;
-      return <RecipeSheet recipe={recipe} onClose={onClose} />;
-    }
     case 'insight':
       return <InsightSheet onClose={onClose} />;
     case 'settings':

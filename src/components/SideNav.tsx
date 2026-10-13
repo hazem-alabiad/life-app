@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import {
+  Cloud,
   Dumbbell,
   House,
-  Leaf,
   Plus,
   Settings2,
   StretchVertical,
   Target,
-  UtensilsCrossed,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { TabId } from '../types';
@@ -28,7 +27,6 @@ const MODULES: NavEntry[] = [
   { id: 'home', label: 'Today', icon: House },
   { id: 'move', label: 'Movement', icon: Dumbbell },
   { id: 'focus', label: 'Focus', icon: Target },
-  { id: 'nourish', label: 'Fuel', icon: UtensilsCrossed },
 ];
 
 /**
@@ -78,8 +76,8 @@ export function SideNav({ active, onChange, onOpenSettings }: SideNavProps) {
       </div>
 
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-ink-2">
-          <Leaf size={18} strokeWidth={1.7} className="text-nourish" aria-hidden />
+        <div className="mb-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-ink-2">
+          <Cloud size={18} strokeWidth={1.7} className="text-nourish" aria-hidden />
           <span className="text-[0.875rem] font-medium">Cloud Synced</span>
         </div>
         <button
@@ -106,7 +104,6 @@ export function BottomNav({ active, onChange }: MobileNavProps) {
     { id: 'home', label: 'Today', icon: House },
     { id: 'move', label: 'Move', icon: Dumbbell },
     { id: 'focus', label: 'Focus', icon: Target },
-    { id: 'nourish', label: 'Fuel', icon: UtensilsCrossed },
   ];
 
   return (
@@ -164,7 +161,6 @@ export function HeaderActions({ onNavigate, onOpenSettings }: HeaderActionsProps
   const [tick, setTick] = useState(0);
 
   const actions: Array<{ label: string; tab: TabId }> = [
-    { label: 'Log a meal', tab: 'nourish' },
     { label: 'Start a sprint', tab: 'focus' },
     { label: 'Plan a workout', tab: 'move' },
   ];

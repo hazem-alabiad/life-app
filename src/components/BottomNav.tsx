@@ -1,4 +1,4 @@
-import { Dumbbell, House, Leaf, Timer } from 'lucide-react';
+import { Dumbbell, House, Timer } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { TabId } from '../types';
 
@@ -32,13 +32,6 @@ const ITEMS: NavItem[] = [
     icon: Timer,
     activeClass: 'text-focus',
     glow: 'bg-focus',
-  },
-  {
-    id: 'nourish',
-    label: 'Nourish',
-    icon: Leaf,
-    activeClass: 'text-nourish',
-    glow: 'bg-nourish',
   },
 ];
 

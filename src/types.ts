@@ -1,8 +1,8 @@
-/** The four destinations in the bottom dock. */
-export type TabId = 'home' | 'move' | 'focus' | 'nourish';
+/** The three destinations in the bottom dock; Fuel is parked for now. */
+export type TabId = 'home' | 'move' | 'focus';
 
 /** Every accent colour in the app belongs to exactly one module. */
-export type AccentName = 'move' | 'focus' | 'nourish';
+export type AccentName = 'move' | 'focus';
 
 /* ------------------------------------------------------------------ move */
 
@@ -201,8 +201,6 @@ export type SheetKind =
   | { kind: 'workout-builder' }
   | { kind: 'stretch-onboarding' }
   | { kind: 'focus-settings' }
-  | { kind: 'meal'; mealId: string }
-  | { kind: 'recipe'; recipeId: string }
   | { kind: 'insight' }
   | { kind: 'add-task' }
   | { kind: 'settings' }
@@ -210,4 +208,3 @@ export type SheetKind =
 
 export type MoveView = 'schedule' | 'exercises' | 'history';
 export type FocusView = 'timer' | 'history';
-export type NourishView = 'log' | 'insights';

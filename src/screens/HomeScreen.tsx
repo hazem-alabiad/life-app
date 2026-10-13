@@ -3,23 +3,17 @@ import {
   Dumbbell,
   Pause,
   Play,
-  Plus,
   Sparkles,
   Target,
-  UtensilsCrossed,
 } from 'lucide-react';
 import { CONTAINER } from '../components/TopBar';
 import { Button } from '../components/Button';
-import { SectionLabel } from '../components/Card';
-import { MacroBar } from '../components/Bar';
 import { useStore } from '../state/store';
 import type { SheetKind, TabId, Workout } from '../types';
-import { formatClock, formatKcal, formatMinutes, pct } from '../lib/format';
+import { formatClock, formatMinutes, pct } from '../lib/format';
 import { formatFullDate } from '../lib/date';
 import {
   focusTodayMs,
-  kcalToday,
-  mealsForDay,
   nextWorkout,
   weekWorkoutStats,
 } from '../lib/selectors';
@@ -45,9 +39,7 @@ export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout }: HomeScre
 
   const stats = weekWorkoutStats(state, today);
   const focusMs = focusTodayMs(state, today);
-  const kcal = kcalToday(state, today);
   const upcoming = nextWorkout(state, today);
-  const todayMeals = mealsForDay(state, today);
 
   const timerRunning = state.timer.status === 'running';
   const timerVisible = state.timer.status !== 'idle';
@@ -213,53 +205,37 @@ export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout }: HomeScre
           </div>
         </section>
 
-        {/* Fuel & Energy: kcal + today's macro split. */}
+        {/* Recovery snapshot — the third card completes the rhythm picture
+            without its own module. */}
         <section className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
-              <UtensilsCrossed size={13} className="text-nourish" /> Fuel &amp; Energy
+              <Sparkles size={13} className="text-focus" /> Rhythm
             </span>
-            <span className="font-tech text-[0.6875rem] text-ink-3">
-              {Math.round(pct(kcal, state.settings.dailyCalorieGoal) * 100)}% goal
-            </span>
+            <span className="font-tech text-[0.6875rem] text-ink-3">this week</span>
           </div>
           <p className="font-tech tnum mt-4 text-[2.5rem] font-semibold leading-none text-ink">
-            {kcal.toLocaleString()}
+            {Math.round(pct(stats.done, stats.goal) * 100)}%
           </p>
           <p className="mt-2 text-[0.8125rem] text-ink-2">
-            <span className="font-tech text-ink-3">/ {state.settings.dailyCalorieGoal.toLocaleString()} kcal</span>{' '}
-            · {todayMeals.length} meal{todayMeals.length === 1 ? '' : 's'} logged today
+            {formatMinutes(stats.minutes)} moved this week
           </p>
-          <div className="mt-4">
-            {todayMeals[0] ? (
-              <MacroBar
-                protein={todayMeals[0].macros.protein}
-                carbs={todayMeals[0].macros.carbs}
-                fat={todayMeals[0].macros.fat}
-              />
-            ) : (
-              <div className="h-1.5 w-full rounded-full bg-track" />
-            )}
+          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-track">
+            <div
+              className="h-full rounded-full bg-focus transition-[width] duration-500"
+              style={{ width: `${pct(stats.done, stats.goal) * 100}%` }}
+            />
           </div>
           <div className="mt-5 flex items-center gap-2">
             <Button
-              accent="nourish"
+              accent="focus"
               variant="soft"
               size="md"
               className="flex-1"
-              icon={<Plus size={15} />}
-              onClick={() => onNavigate('nourish')}
+              icon={<Sparkles size={15} />}
+              onClick={() => onOpenSheet({ kind: 'insight' })}
             >
-              Log Meal
-            </Button>
-            <Button
-              accent="nourish"
-              variant="soft"
-              size="sm"
-              aria-label="Open fuel module"
-              onClick={() => onNavigate('nourish')}
-            >
-              <ArrowRight size={15} />
+              Daily insight
             </Button>
           </div>
         </section>
@@ -310,22 +286,7 @@ function TimelineList({
   const fmtTime = (at: Date) =>
     at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
 
-  // Already-logged meals, ascending.
-  const mealsToday = state.meals
-    .filter((m) => new Date(m.createdAt).toDateString() === today.toDateString())
-    .sort((a, b) => a.createdAt - b.createdAt);
-
-  for (const meal of mealsToday) {
-    rows.push({
-      key: meal.id,
-      time: fmtTime(new Date(meal.createdAt)),
-      label: meal.name,
-      status: `Logged · ${formatKcal(meal.kcal)}`,
-      statusTone: 'text-ink-3',
-      dot: 'bg-nourish',
-    });
-  }
-
+  // The day assembled from what already happened and what is queued.
   const active =
     state.timer.mode === 'focus' && state.timer.status !== 'idle'
       ? state.tasks.find((t) => t.id === state.timer.taskId)
@@ -358,7 +319,7 @@ function TimelineList({
       <div className="px-5 py-8 text-center">
         <p className="font-display text-[0.9375rem] font-medium text-ink">A clear day</p>
         <p className="mt-1 text-[0.8125rem] text-ink-2">
-          Log a meal or start a sprint and it will appear here, in order.
+          Start a sprint and it will appear here, in order.
         </p>
         <div className="mt-4 flex justify-center gap-2">
           <Button accent="focus" variant="soft" size="sm" onClick={() => onNavigate('focus')}>
@@ -388,8 +349,3 @@ function TimelineList({
     </ul>
   );
 }
-
-// Keep selectors import used even if a branch removes one.
-void kcalToday;
-void formatMinutes;
-void SectionLabel;

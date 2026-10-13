@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
-import { CalendarDays, Clock, Play, Sparkles, Wind } from 'lucide-react';
+import { Clock, Play, Sparkles, Wind } from 'lucide-react';
 import { Button } from '../../components/Button';
-import { SectionLabel } from '../../components/Card';
 import { Tag } from '../../components/Chip';
 import { ExerciseArt } from '../../components/ExerciseArt';
 import { useStore } from '../../state/store';
@@ -44,9 +43,6 @@ export function ScheduleView({
   const nextDayIndex =
     strip.findIndex((d) => dateKey(d) === selectedKey);
 
-  const totalMinutes = Object.values(state.schedule)
-    .flat()
-    .reduce((sum, w) => sum + w.durationMin, 0);
 
   return (
     <div className="space-y-5">
@@ -162,82 +158,30 @@ export function ScheduleView({
                 icon={<Play size={17} />}
                 onClick={() => onStartWorkout(featured)}
               >
-                Launch Workout Guide (Live Tracker)
-              </Button>
-            </div>
-
-            {/* Recovery flow teaser. */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-5">
-              <div className="min-w-0">
-                <p className="flex items-center gap-1.5 font-tech text-[0.72rem] text-ink-3">
-                  <Clock size={12} /> 15 min · Light Intensity Recovery
-                </p>
-                <h3 className="mt-1 font-display text-[1.0625rem] font-semibold text-ink">
-                  Post-Work Lower Body Mobility Flow
-                </h3>
-                <p className="mt-1 text-[0.8125rem] text-ink-2">
-                  Decompresses hip flexors and unlocks thoracic mobility after prolonged sitting.
-                </p>
-              </div>
-              <Button accent="move" variant="soft" size="md" onClick={onStartStretch} icon={<Wind size={15} />}>
-                Start Flow
+                Start Workout · Live Tracker
               </Button>
             </div>
           </section>
-
-          {/* Right rail: micro-recovery + weekly metrics. */}
-          <aside className="space-y-4 lg:col-span-4">
-            <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
-              <div className="flex items-center justify-between">
-                <SectionLabel>Micro-Recovery Pause</SectionLabel>
-                <span className="font-tech text-[0.72rem] font-semibold text-nourish">5 Min Reset</span>
-              </div>
-              <h3 className="mt-2.5 font-display text-[1.0625rem] font-semibold text-ink">
-                {STRETCH_GOAL_LABELS[state.settings.stretchGoal].label}
-              </h3>
-              <p className="mt-1.5 text-[0.8125rem] leading-5 text-ink-2">
-                Interleaving short mobility intervals during focus sprints restores spinal
-                hydration and improves blood circulation.
-              </p>
-              <div className="mt-4 space-y-2 rounded-xl border border-line bg-canvas p-3.5">
-                <p className="flex items-center gap-2.5 text-[0.8125rem] text-ink-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full border border-nourish/50 text-nourish" aria-hidden>
-                    <CalendarDays size={11} />
-                  </span>
-                  Thoracic spine extension
-                </p>
-                <p className="flex items-center gap-2.5 text-[0.8125rem] text-ink-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full border border-nourish/50 text-nourish" aria-hidden>
-                    <CalendarDays size={11} />
-                  </span>
-                  Psoas &amp; hip flexor release
-                </p>
-              </div>
-              <Button accent="move" variant="soft" block className="mt-4" icon={<Play size={16} />} onClick={onStartStretch}>
-                Start 5-Min Stretch Guide
-              </Button>
-            </div>
-
-            <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
-              <SectionLabel>Weekly Metrics Summary</SectionLabel>
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-line bg-canvas p-4 text-center">
-                  <p className="font-tech tnum text-[1.5rem] font-semibold text-ink">
-                    {totalMinutes || 170} min
-                  </p>
-                  <p className="mt-1 text-[0.6875rem] text-ink-3">Total Volume</p>
-                </div>
-                <div className="rounded-xl border border-line bg-canvas p-4 text-center">
-                  <p className="font-tech tnum text-[1.5rem] font-semibold text-ink">
-                    {(totalMinutes * 8.4).toFixed(0)} <span className="text-[0.8125rem]">kcal</span>
-                  </p>
-                  <p className="mt-1 text-[0.6875rem] text-ink-3">Est. Energy Burn</p>
-                </div>
-              </div>
-            </div>
-          </aside>
         </div>
       )}
+
+      {/* One recovery entry point, kept deliberately small. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-5">
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 font-tech text-[0.72rem] text-ink-3">
+            <Clock size={12} /> 5 min recovery
+          </p>
+          <h3 className="mt-1 font-display text-[1.0625rem] font-semibold text-ink">
+            {STRETCH_GOAL_LABELS[state.settings.stretchGoal].label}
+          </h3>
+          <p className="mt-1 text-[0.8125rem] text-ink-2">
+            A short mobility break between focus sprints.
+          </p>
+        </div>
+        <Button accent="move" variant="soft" size="md" onClick={onStartStretch} icon={<Wind size={15} />}>
+          Start Stretch
+        </Button>
+      </div>
     </div>
   );
 }
