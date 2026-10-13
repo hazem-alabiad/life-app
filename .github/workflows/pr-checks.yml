@@ -1,0 +1,57 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typecheck, Build & Bundle Review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Fail if the lockfile is out of sync — prevents "works on my machine".
+      - name: Verify lockfile consistency
+        run: npm ci --dry-run
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      # Guard rail: the app is a local-first PWA that must stay small and
+      # dependency-free. Fail if the JS bundle exceeds 400 KiB raw.
+      - name: Bundle size review
+        run: |
+          bundle=$(ls dist/assets/index-*.js | head -1)
+          size=$(stat -c%s "$bundle")
+          echo "Bundle: $bundle ($size bytes)"
+          limit=409600
+          if [ "$size" -gt "$limit" ]; then
+            echo "::error::Bundle grew past ${limit} bytes — justify or split it"
+            exit 1
+          fi
+
+      # Sanity: the built shell must reference a real hashed bundle.
+      - name: Verify build output integrity
+        run: |
+          grep -q 'assets/index-.*\.js' dist/index.html
+          test -f dist/manifest.webmanifest
+          test -f dist/sw.js
