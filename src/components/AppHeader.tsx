@@ -1,11 +1,10 @@
-import { Search } from 'lucide-react';
 import type { TabId } from '../types';
 import { HeaderActions } from './SideNav';
 
 /**
- * App-wide header in the Remix style: the destination title on the left, a
- * command-search field in the middle (visual, with ⌘K hint), the + Add menu
- * and settings on the right. One of these, always visible from tablet up.
+ * App-wide header in the Remix style: the destination title on the left, the
+ * + Add menu and settings on the right. One of these, always visible from
+ * tablet up. The search field was removed: it promised ⌘K it could not keep.
  */
 export function AppHeader({
   title,
@@ -22,14 +21,6 @@ export function AppHeader({
         <h1 className="min-w-0 flex-shrink-0 font-display text-[1.125rem] font-semibold tracking-tight text-ink">
           {title}
         </h1>
-
-        <div className="mx-auto hidden w-full max-w-md items-center gap-2.5 rounded-xl border border-line bg-surface px-3.5 py-2 text-ink-3 md:flex">
-          <Search size={15} aria-hidden />
-          <span className="flex-1 text-[0.8125rem]">Search or jump to...</span>
-          <kbd className="font-tech rounded-md border border-line bg-surface-3 px-1.5 py-0.5 text-[0.625rem] text-ink-3">
-            ⌘K
-          </kbd>
-        </div>
 
         <div className="ml-auto flex flex-shrink-0 items-center md:ml-0">
           <HeaderActions onNavigate={onNavigate} onOpenSettings={onOpenSettings} />

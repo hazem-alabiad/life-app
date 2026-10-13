@@ -77,6 +77,7 @@ export function App() {
               onNavigate={go}
               onOpenSheet={setSheet}
               onStartWorkout={startWorkout}
+              onStartStretch={() => setStretchOpen(true)}
             />
           )}
           {tab === 'move' && (
@@ -119,16 +120,19 @@ function HomeScreenWrapper({
   onNavigate,
   onOpenSheet,
   onStartWorkout,
+  onStartStretch,
 }: {
   onNavigate: (tab: TabId) => void;
   onOpenSheet: (sheet: SheetKind) => void;
   onStartWorkout: (workout: Workout) => void;
+  onStartStretch: () => void;
 }) {
   return (
     <HomeScreen
       onNavigate={onNavigate}
       onOpenSheet={onOpenSheet}
       onStartWorkout={onStartWorkout}
+      onStartStretch={onStartStretch}
     />
   );
 }

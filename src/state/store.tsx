@@ -13,7 +13,6 @@ import type {
   AppState,
   FocusSessionRecord,
   FocusTask,
-  MealEntry,
   SessionRecord,
   Settings,
   TimerMode,
@@ -21,7 +20,7 @@ import type {
   Workout,
 } from '../types';
 import { newId } from '../lib/id';
-import { seedMeals, seedSchedule, seedSessions, seedTasks } from '../data/demo';
+import { seedSchedule, seedSessions, seedTasks } from '../data/demo';
 
 const STORAGE_KEY = 'life-app/state/v1';
 const STATE_VERSION = 1;
@@ -78,7 +77,6 @@ export function initialState(now = new Date()): AppState {
     tasks: seedTasks(now),
     timer: idleTimer('focus', modeDurationMs(settings, 'focus')),
     focusHistory: [],
-    meals: seedMeals(now),
   };
 }
 
@@ -98,7 +96,6 @@ export type Action =
   | { type: 'timer/pause'; now: number }
   | { type: 'timer/reset'; durationMs: number }
   | { type: 'timer/finish'; now: number; durationMs: (mode: TimerMode) => number }
-  | { type: 'meal/add'; meal: MealEntry }
   | { type: 'meal/remove'; id: string }
   | { type: 'demo/clear' };
 
@@ -270,17 +267,10 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     }
 
-    case 'meal/add':
-      return { ...state, meals: [action.meal, ...state.meals].slice(0, 500) };
-
-    case 'meal/remove':
-      return { ...state, meals: state.meals.filter((m) => m.id !== action.id) };
-
     case 'demo/clear':
       return {
         ...state,
         demoSeeded: false,
-        meals: state.meals.filter((m) => !m.id.startsWith('seed_meal_')),
         sessions: state.sessions.filter((s) => !s.id.startsWith('seed_sess_')),
         tasks: state.tasks.filter((t) => !t.id.startsWith('seed_task_')),
       };
@@ -378,6 +368,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(id);
   }, [state.timer.status, state.timer.endsAt]);
 
+  // Hidden tabs throttle setInterval, so the countdown can stall in the
+  // background. Re-anchor to the wall clock the moment the tab is visible
+  // again — endsAt is authoritative, ticking is just a render detail.
+  useEffect(() => {
+    const catchUp = () => setNow(Date.now());
+    document.addEventListener('visibilitychange', catchUp);
+    window.addEventListener('focus', catchUp);
+    return () => {
+      document.removeEventListener('visibilitychange', catchUp);
+      window.removeEventListener('focus', catchUp);
+    };
+  }, []);
+
   // Completing a phase is an event, not a render side effect: guard against
   // firing twice for the same end timestamp (StrictMode double-invokes effects).
   useEffect(() => {
@@ -421,4 +424,4 @@ export function useStore(): StoreValue {
   return ctx;
 }
 
-export type { MealEntry, SessionRecord, Workout };
+export type { SessionRecord, Workout };

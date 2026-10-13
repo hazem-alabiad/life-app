@@ -1,4 +1,4 @@
-import type { AppState, MealEntry, SessionRecord, Workout } from '../types';
+import type { AppState, SessionRecord, Workout } from '../types';
 import { addDays, dateKey, isSameDay, startOfWeek, todayKey } from './date';
 
 export interface WeekWorkoutStats {
@@ -33,37 +33,6 @@ export function focusTodayMs(state: AppState, now = new Date()): number {
       : 0;
 
   return done + live;
-}
-
-export function mealsForDay(state: AppState, day: Date): MealEntry[] {
-  return state.meals
-    .filter((m) => isSameDay(new Date(m.createdAt), day))
-    .sort((a, b) => b.createdAt - a.createdAt);
-}
-
-export function kcalToday(state: AppState, now = new Date()): number {
-  return mealsForDay(state, now).reduce((sum, m) => sum + m.kcal, 0);
-}
-
-export function lastMeal(state: AppState): MealEntry | null {
-  return [...state.meals].sort((a, b) => b.createdAt - a.createdAt)[0] ?? null;
-}
-
-/** Daily calorie totals for the Insights trend line, oldest first. */
-export function calorieTrend(state: AppState, days = 7, now = new Date()): number[] {
-  const totals: number[] = [];
-  for (let offset = days - 1; offset >= 0; offset--) {
-    const day = addDays(now, -offset);
-    const total = mealsForDay(state, day).reduce((sum, m) => sum + m.kcal, 0);
-    totals.push(total);
-  }
-  return totals;
-}
-
-export function averageCalories(values: number[]): number {
-  const logged = values.filter((v) => v > 0);
-  if (logged.length === 0) return 0;
-  return Math.round(logged.reduce((a, b) => a + b, 0) / logged.length);
 }
 
 export interface NextWorkout {
