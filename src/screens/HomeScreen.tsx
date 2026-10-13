@@ -23,6 +23,7 @@ interface HomeScreenProps {
   onNavigate: (tab: TabId) => void;
   onOpenSheet: (sheet: SheetKind) => void;
   onStartWorkout: (workout: Workout) => void;
+  onStartStretch: () => void;
 }
 
 function greeting(d: Date): string {
@@ -33,7 +34,7 @@ function greeting(d: Date): string {
   return 'Good evening';
 }
 
-export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout }: HomeScreenProps) {
+export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout, onStartStretch }: HomeScreenProps) {
   const { state, dispatch, remainingMs, progress, now } = useStore();
   const today = new Date(now);
 
@@ -249,7 +250,7 @@ export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout }: HomeScre
         </h2>
         <button
           type="button"
-          onClick={() => onOpenSheet({ kind: 'insight' })}
+          onClick={onStartStretch}
           className="flex items-center gap-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:text-ink"
         >
           <Sparkles size={14} className="text-focus" /> Launch 5m Posture Reset

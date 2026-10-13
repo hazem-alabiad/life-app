@@ -1,6 +1,5 @@
-import type { FocusTask, MealEntry, Schedule, SessionRecord } from '../types';
+import type { FocusTask, Schedule, SessionRecord } from '../types';
 import { addDays, dateKey, startOfWeek } from '../lib/date';
-import { FOODS, tipsFor } from './foods';
 import { buildWorkout, WORKOUT_TEMPLATES } from './workouts';
 
 /**
@@ -56,52 +55,6 @@ export function seedSessions(now = new Date()): SessionRecord[] {
       };
     })
     .filter((s): s is SessionRecord => s !== null);
-}
-
-/** Three meals a day for the past week, drawn from the seeded food table. */
-export function seedMeals(now = new Date()): MealEntry[] {
-  const plan = [
-    { name: 'Oatmeal with Banana', hour: 8 },
-    { name: 'Chicken Rice Plate', hour: 13 },
-    { name: 'Salmon Quinoa Bowl', hour: 19 },
-  ];
-  const extras: Record<number, string> = { 1: 'Greek Yoghurt with Berries', 4: 'Sushi Set' };
-
-  const meals: MealEntry[] = [];
-  for (let dayOffset = 6; dayOffset >= 0; dayOffset--) {
-    const day = dayOffset === 0 ? new Date(now) : addDays(now, -dayOffset);
-    const dayMeals = [...plan];
-    const extra = extras[dayOffset];
-    if (extra) dayMeals.splice(1, 0, { name: extra, hour: 16 });
-
-    for (const entry of dayMeals) {
-      const food = FOODS.find((f) => f.name === entry.name) ?? FOODS[0]!;
-      const at = new Date(day);
-      // Today's: one meal each roughly at late morning, mid-afternoon, and the
-      // most recent hour — clamp under "now" so nothing lands in the future.
-      if (dayOffset === 0) {
-        const anchorHour = Math.max(11, Math.min(now.getHours(), 20));
-        const offsetsByHour: Record<number, number> = { 8: 5, 13: 3, 19: 1 };
-        at.setHours(Math.max(6, anchorHour - (offsetsByHour[entry.hour] ?? 2)), 15, 0, 0);
-      } else {
-        at.setHours(entry.hour, 15 + (dayOffset % 3) * 10, 0, 0);
-      }
-      // Anything later than right now has not happened yet.
-      if (at.getTime() > now.getTime()) continue;
-      meals.push({
-        id: `seed_meal_${dayOffset}_${entry.hour}`,
-        name: food.name,
-        kcal: food.kcal,
-        macros: food.macros,
-        tips: tipsFor(food),
-        confidence: 0.72,
-        createdAt: at.getTime(),
-        photo: null,
-        source: 'photo',
-      });
-    }
-  }
-  return meals;
 }
 
 export function seedTasks(now = new Date()): FocusTask[] {

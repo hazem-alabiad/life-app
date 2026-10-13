@@ -129,39 +129,6 @@ export interface FocusSessionRecord {
 
 /* --------------------------------------------------------------- nourish */
 
-export interface MacroSet {
-  protein: number;
-  carbs: number;
-  fat: number;
-  sugar: number;
-}
-
-export interface MealEntry {
-  id: string;
-  name: string;
-  kcal: number;
-  macros: MacroSet;
-  /** Short, specific lines tied to what was logged. */
-  tips: string[];
-  /** How sure the recogniser is of the name; 0 when entered by hand. */
-  confidence: number;
-  createdAt: number;
-  /** Optional compressed thumbnail of the captured frame. */
-  photo: string | null;
-  source: 'photo' | 'manual';
-}
-
-export interface Recipe {
-  id: string;
-  name: string;
-  prepMin: number;
-  kcal: number;
-  tag: string;
-  summary: string;
-  steps: string[];
-  ingredients: string[];
-}
-
 /* -------------------------------------------------------------- settings */
 
 export interface Settings {
@@ -190,7 +157,6 @@ export interface AppState {
   tasks: FocusTask[];
   timer: TimerState;
   focusHistory: FocusSessionRecord[];
-  meals: MealEntry[];
 }
 
 /* -------------------------------------------------------------- ui types */
