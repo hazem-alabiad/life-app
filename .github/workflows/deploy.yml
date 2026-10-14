@@ -27,6 +27,11 @@ jobs:
 
       - run: npm ci
       - run: npm run typecheck
+      # Cloud-sync identifiers. Both are public by design — access to data is
+      # enforced by Postgres RLS on the Supabase side, not by key secrecy.
+      env:
+        VITE_SUPABASE_URL: https://ptbhhytyadpobozurxsk.supabase.co
+        VITE_SUPABASE_ANON_KEY: sb_publishable_NVwQ6CYVuoNa0spnu25eMQ_ocPAVr7s
       - run: npm run build
 
       - uses: actions/configure-pages@v5
