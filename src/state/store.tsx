@@ -21,6 +21,21 @@ import type {
 } from '../types';
 import { newId } from '../lib/id';
 import { seedSchedule, seedSessions, seedTasks } from '../data/demo';
+import { CloudProvider, cloudConfigured } from '../lib/cloud';
+import type { AppState as ExternalState } from '../types';
+
+/**
+ * Cloud-replaceable state: when a snapshot arrives from Supabase, the reducer
+ * swaps wholesale via the `cloud/restore` action. The store also stamps
+ * `savedAt` on every local save so the sync layer can tell which copy was
+ * written last (AppState carries the optional field declared in types.ts via
+ * a module augmentation below).
+ */
+declare module '../types' {
+  interface AppState {
+    savedAt?: string;
+  }
+}
 
 const STORAGE_KEY = 'life-app/state/v1';
 const STATE_VERSION = 1;
@@ -97,6 +112,7 @@ export type Action =
   | { type: 'timer/reset'; durationMs: number }
   | { type: 'timer/finish'; now: number; durationMs: (mode: TimerMode) => number }
   | { type: 'meal/remove'; id: string }
+  | { type: 'cloud/restore'; state: ExternalState }
   | { type: 'demo/clear' };
 
 /** Which phase follows the one that just ended. */
@@ -267,6 +283,17 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     }
 
+    case 'cloud/restore': {
+      // A snapshot from the cloud replaces local state wholesale. The timer
+      // never arrives running: a wall-clock countdown can only live in one
+      // browser, so an in-flight phase pauses instead of time-travelling.
+      const restored = action.state;
+      const timer = restored.timer.status === 'running'
+        ? { ...restored.timer, status: 'paused' as const, endsAt: null, remainingMs: restored.timer.durationMs }
+        : restored.timer;
+      return { ...restored, version: STATE_VERSION, timer, savedAt: new Date().toISOString() };
+    }
+
     case 'demo/clear':
       return {
         ...state,
@@ -327,13 +354,32 @@ const StoreContext = createContext<StoreValue | null>(null);
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadState);
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const [now, setNow] = useState(() => Date.now());
   const completedRef = useRef<number | null>(null);
 
   // Persist on every change; the payload is small and writes are cheap.
+  // A local edit is stamped with the time so the cloud layer can compare
+  // 'local moved since last pull' against the remote's updated_at.
   useEffect(() => {
+    if (!('savedAt' in state)) {
+      const stamped: AppState = { ...state, savedAt: new Date().toISOString() } as AppState;
+      saveState(stamped);
+      return;
+    }
     saveState(state);
   }, [state]);
+
+  const setLocalStateRef = useRef<(next: AppState) => void>(() => {});
+  setLocalStateRef.current = (next: AppState) => {
+    dispatch({ type: 'cloud/restore', state: next });
+  };
+
+  // Identity for the cloud layer's two callbacks. Both are stable references
+  // that read the latest deps, so the sync effect never re-runs spuriously.
+  const getLocalState = useCallback(() => stateRef.current, []);
+  const setLocalState = useCallback((next: AppState) => setLocalStateRef.current(next), []);
 
   // Theme: dark is the default and light is a first-class companion.
   useEffect(() => {
@@ -415,7 +461,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [state, remainingMs, progress, now, modeDuration],
   );
 
-  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+  return (
+    <StoreContext.Provider value={value}>
+      {cloudConfigured ? (
+        <CloudProvider getLocalState={getLocalState} setLocalState={setLocalState}>
+          {children}
+        </CloudProvider>
+      ) : (
+        children
+      )}
+    </StoreContext.Provider>
+  );
 }
 
 export function useStore(): StoreValue {

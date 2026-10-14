@@ -13,3 +13,8 @@ npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .freebuff/
+
+# Local env files (real keys never get committed — .env.example is the template)
+.env
+.env.local
+.env.*.local
