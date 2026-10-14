@@ -1,9 +1,10 @@
-import { Moon, Monitor, RefreshCw, Sun } from 'lucide-react';
+import { Cloud, CloudOff, Github, LogOut, RefreshCw, Moon, Monitor, Sun } from 'lucide-react';
 import { Sheet } from '../../components/Sheet';
 import { Button } from '../../components/Button';
 import { Segmented, SheetSection, Stepper } from '../../components/Controls';
 import { FilterChip } from '../../components/Chip';
 import { useStore } from '../../state/store';
+import { useCloud } from '../../lib/cloud';
 import type { StretchGoal } from '../../types';
 import { STRETCH_GOAL_LABELS } from '../../data/workouts';
 
@@ -87,6 +88,8 @@ export function SettingsSheet({
         </button>
       </SheetSection>
 
+      <CloudSection />
+
       <SheetSection title="Data">
         <div className="py-3">
           <p className="text-[0.75rem] leading-5 text-ink-3">
@@ -110,5 +113,63 @@ export function SettingsSheet({
         </div>
       </SheetSection>
     </Sheet>
+  );
+}
+
+/**
+ * Cloud sync section. Rendered only when the deployment is configured with
+ * Supabase env vars; GitHub is the sole identity provider. The local copy
+ * stays authoritative — the cloud mirror is what survives clearing site data
+ * or opening on another device.
+ */
+function CloudSection() {
+  const cloud = useCloud();
+  if (!cloud.available) return null;
+
+  return (
+    <SheetSection title="Cloud sync">
+      <div className="py-3">
+        {cloud.user ? (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2.5">
+              <Cloud size={16} className="text-focus" />
+              <div className="min-w-0">
+                <p className="truncate text-[0.875rem] text-ink">@{cloud.user.name}</p>
+                <p className="text-[0.75rem] text-ink-3">
+                  {cloud.status === 'error'
+                    ? 'Sync problem — will retry on next change'
+                    : cloud.status === 'syncing'
+                      ? 'Syncing…'
+                      : 'Data synced to your account'}
+                </p>
+              </div>
+            </div>
+            <Button
+              accent="focus"
+              variant="ghost"
+              size="sm"
+              icon={<LogOut size={14} />}
+              onClick={() => void cloud.signOut()}
+            >
+              Sign out
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2.5">
+              <CloudOff size={16} className="text-ink-3" />
+              <p className="text-[0.875rem] text-ink">Sign in to back up and sync</p>
+            </div>
+            <Button accent="focus" size="sm" icon={<Github size={14} />} onClick={cloud.signIn}>
+              Continue with GitHub
+            </Button>
+            <p className="text-[0.75rem] leading-5 text-ink-3">
+              GitHub is the only sign-in. Your data stays in this browser until you sign in; the
+              cloud copy is then updated after each change.
+            </p>
+          </div>
+        )}
+      </div>
+    </SheetSection>
   );
 }
