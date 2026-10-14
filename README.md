@@ -1,10 +1,12 @@
 # Life App
 
-A calm, local-first companion for movement, focus, and nourishment. Four tabs — Home, Move,
-Focus, Nourish — built as one visual language rather than three tools bolted together.
+A calm, local-first companion for movement, focus, and nourishment. Mobile-first, installable
+as a PWA, dark-first with a fully designed light mode.
 
-Mobile-first, installable as a PWA, dark-first with a fully designed light mode. Nothing leaves
-the device: there is no account, no server, and no analytics.
+**Live: [hazem-alabiad.github.io/life-app](https://hazem-alabiad.github.io/life-app/)**
+
+Data stays in your browser by default — no analytics, no tracking. Optional cloud sync via
+GitHub sign-in mirrors your data to Supabase; see [Cloud sync](#cloud-sync) below.
 
 ## Running it
 
@@ -30,10 +32,10 @@ Being explicit about this matters more than looking finished.
 | Meal analysis | On-device heuristic in `src/lib/recognize.ts`: hashes the photo, picks a plausible entry from a seeded food table | A vision model behind the same `estimateMeal` signature |
 | Daily insights | Curated written set in `src/data/insights.ts`, rotated by day | A feed, if you ever want one |
 | Workout suggestions | Deterministic "least recently trained" ranking | A model, behind `suggestWorkout` |
-| Storage | `localStorage`, versioned and migrated on read | A sync layer — the store is a single reducer |
+| Storage | `localStorage`, versioned and migrated on read | already here: see [Cloud sync](#cloud-sync) |
 
-Sample history is seeded on first launch so the screens have something to draw. The Insights view
-says so, and Settings has a button to clear it. Nothing seeded pretends to be your data.
+Sample history is seeded on first launch so the screens have something to draw. The Insights
+view says so, and Settings has a button to clear it. Nothing seeded pretends to be your data.
 
 ## Structure
 
@@ -61,6 +63,31 @@ correct while the tab is backgrounded or the screen is locked, and resumes after
 - Colour is never the only signal — module accents always travel with an icon or a label.
 - One visible focus ring, a real dialog role on every sheet, Escape to dismiss, and
   `prefers-reduced-motion` respected throughout.
+
+## Cloud sync
+
+Optional. Without it the app is fully local — clearing site data clears the app.
+
+Sign in once with GitHub (Settings → Cloud sync) and the app's state is mirrored to a
+Supabase Postgres table as a per-user snapshot. The local copy stays the source of truth:
+the supervisor uploads after each change, and on a new device the fresher snapshot wins
+(last-writer-wins via timestamps).
+
+- **Privacy** is enforced by Postgres Row Level Security — each user can only read/write
+  their own row (`auth.uid() = user_id`), never by client code. The Supabase publishable
+  key and project URL are public identifiers; they are designed to be embedded.
+- **GitHub-only** sign-in via PKCE OAuth. No passwords ever touch the app.
+- The Supabase SDK ships in a lazily-loaded chunk, so signed-out visitors never download it
+  and the main bundle stays at ~224 KiB. Deployments without the env vars look and behave
+  exactly like a local-only build.
+
+Setup (one-time, each step is manual by design):
+
+1. Create the `user_state` table: paste [`supabase/schema.sql`](supabase/schema.sql) into
+   the Supabase SQL editor.
+2. Enable the GitHub provider in Supabase Auth, wired to a GitHub OAuth App whose callback
+   is `https://<project-ref>.supabase.co/auth/v1/callback`.
+3. Allowlist the app origin in Supabase → Auth → URL Configuration → Redirect URLs.
 
 ## Known limits
 
