@@ -84,7 +84,6 @@ export function App() {
             <MoveScreen
               onStartWorkout={startWorkout}
               onStartStretch={() => setStretchOpen(true)}
-              onOpenSheet={setSheet}
               onOpenExercise={openExercise}
               onAddWorkout={setBuilderDay}
             />

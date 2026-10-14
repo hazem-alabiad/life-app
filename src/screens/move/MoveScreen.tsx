@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import { AppHeader } from '../../components/AppHeader';
 import { CONTAINER } from '../../components/TopBar';
 import { ScheduleView } from './ScheduleView';
 import { ExercisesView } from './ExercisesView';
 import { HistoryView } from './HistoryView';
-import type { MoveView, SheetKind, TabId, Workout } from '../../types';
+import type { MoveView, Workout } from '../../types';
 
 interface MoveScreenProps {
   onStartWorkout: (workout: Workout) => void;
   onStartStretch: () => void;
-  onOpenSheet: (sheet: SheetKind) => void;
   onOpenExercise: (exerciseId: string) => void;
   onAddWorkout: (day: string) => void;
 }
@@ -23,7 +21,6 @@ const VIEWS: Array<{ id: MoveView; label: string }> = [
 export function MoveScreen({
   onStartWorkout,
   onStartStretch,
-  onOpenSheet,
   onOpenExercise,
   onAddWorkout,
 }: MoveScreenProps) {
@@ -31,11 +28,8 @@ export function MoveScreen({
 
   return (
     <>
-      <AppHeader
-        title="Movement"
-        onNavigate={(tab: TabId) => tab === 'move' ? undefined : undefined as never}
-        onOpenSettings={() => onOpenSheet({ kind: 'settings' })}
-      />
+      {/* App.tsx already renders the page header; this screen only layers
+          its own view switcher beneath it. */}
       {/* View switcher in the Remix pill style. */}
       <div className="sticky top-14 z-20 border-b border-line bg-canvas/85 backdrop-blur-xl">
         <div className={`${CONTAINER} flex flex-wrap items-center gap-2 py-3`}>
