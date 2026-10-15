@@ -158,6 +158,8 @@ function Sheets({
       return <FocusSettingsSheet onClose={onClose} />;
     case 'add-task':
       return <AddTaskSheet onClose={onClose} />;
+    case 'edit-task':
+      return <AddTaskSheet onClose={onClose} taskId={sheet.taskId} />;
     case 'insight':
       return <InsightSheet onClose={onClose} />;
     case 'settings':

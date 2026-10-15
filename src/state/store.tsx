@@ -103,6 +103,7 @@ export type Action =
   | { type: 'schedule/remove'; day: string; workoutId: string }
   | { type: 'session/record'; record: SessionRecord }
   | { type: 'task/add'; name: string; planned: number }
+  | { type: 'task/edit'; id: string; name: string; planned: number }
   | { type: 'task/remove'; id: string }
   | { type: 'task/reorder'; id: string; direction: -1 | 1 }
   | { type: 'task/move'; id: string; toIndex: number }
@@ -163,6 +164,16 @@ export function reducer(state: AppState, action: Action): AppState {
         createdAt: Date.now(),
       };
       return { ...state, tasks: [...state.tasks, task] };
+    }
+
+    case 'task/edit': {
+      const name = action.name.trim();
+      if (name.length < 2) return state;
+      const planned = Math.min(12, Math.max(1, Math.round(action.planned) || 1));
+      return {
+        ...state,
+        tasks: state.tasks.map((t) => (t.id === action.id ? { ...t, name, planned } : t)),
+      };
     }
 
     case 'task/remove':
