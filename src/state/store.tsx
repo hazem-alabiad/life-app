@@ -104,6 +104,7 @@ export type Action =
   | { type: 'session/record'; record: SessionRecord }
   | { type: 'task/add'; name: string; planned: number }
   | { type: 'task/remove'; id: string }
+  | { type: 'task/reorder'; id: string; direction: -1 | 1 }
   | { type: 'task/select'; id: string | null }
   | { type: 'task/complete-pomodoro'; id: string }
   | { type: 'timer/setMode'; mode: TimerMode; durationMs: number; status?: TimerState['status'] }
@@ -169,6 +170,16 @@ export function reducer(state: AppState, action: Action): AppState {
         tasks: state.tasks.filter((t) => t.id !== action.id),
         timer: state.timer.taskId === action.id ? { ...state.timer, taskId: null } : state.timer,
       };
+
+    case 'task/reorder': {
+      const index = state.tasks.findIndex((t) => t.id === action.id);
+      const target = index + action.direction;
+      if (index < 0 || target < 0 || target >= state.tasks.length) return state;
+      const tasks = [...state.tasks];
+      const [moved] = tasks.splice(index, 1);
+      tasks.splice(target, 0, moved);
+      return { ...state, tasks };
+    }
 
     case 'task/select':
       return { ...state, timer: { ...state.timer, taskId: action.id } };
