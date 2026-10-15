@@ -68,7 +68,7 @@ export function FilterChip({ children, selected, onClick, accent = 'move' }: Fil
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`flex-shrink-0 rounded-full border px-3.5 py-2 text-[0.75rem] font-medium transition-colors active:opacity-80 ${
+      className={`flex min-h-[44px] flex-shrink-0 items-center rounded-full border px-3.5 py-2 text-[0.75rem] font-medium transition-colors active:opacity-80 ${
         selected
           ? `${a.soft} ${a.text} ${a.border}`
           : 'border-line bg-surface text-ink-2'
@@ -108,7 +108,7 @@ export function ChipTabs<T extends string>({
             type="button"
             aria-selected={selected}
             onClick={() => onChange(item.id)}
-            className={`flex-shrink-0 rounded-full border px-4 py-2 text-[0.8125rem] font-medium transition-colors ${
+            className={`flex min-h-[44px] flex-shrink-0 items-center rounded-full border px-4 py-2 text-[0.8125rem] font-medium transition-colors ${
               selected ? `${a.soft} ${a.text} ${a.border}` : 'border-transparent text-ink-3'
             }`}
           >

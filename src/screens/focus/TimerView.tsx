@@ -245,10 +245,10 @@ export function TimerView({ onOpenSheet }: TimerViewProps) {
       <div className="mt-8 space-y-3">
         <div>
           <p className="font-tech text-[0.6875rem] uppercase tracking-[0.14em] text-ink-3">
-            Sprint targets &amp; queues
+            Sprint target &amp; queue
           </p>
           <h2 className="mt-1 font-display text-[1.5rem] font-semibold tracking-tight text-ink">
-            Grouped Lists &amp; Subtasks
+            Task queue
           </h2>
         </div>
 
@@ -304,7 +304,20 @@ export function TimerView({ onOpenSheet }: TimerViewProps) {
               </p>
             </div>
           ) : (
-            <ul className="divide-y divide-line border-t border-line">
+            /* The queue collapses once a target is picked so the running
+               view stays ring + controls + current target. Remounting on
+               target change resets the disclosure: select collapses,
+               clearing re-opens, manual toggle otherwise. */
+            <details
+              key={activeTask ? `target-${activeTask.id}` : 'no-target'}
+              open={!activeTask}
+              className="group border-t border-line"
+            >
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-[0.75rem] font-medium text-ink-3 transition-colors hover:text-ink-2 md:px-5 [&::-webkit-details-marker]:hidden">
+                <ChevronDown size={14} className="transition-transform group-open:rotate-180" aria-hidden />
+                {activeTask ? `Queue · ${tasks.length - 1} other${tasks.length - 1 === 1 ? '' : 's'}` : `Task list · ${tasks.length}`}
+              </summary>
+              <ul className="divide-y divide-line border-t border-line">
               {tasks.map((task, index) => {
                 const selected = task.id === timer.taskId;
                 return (
@@ -360,28 +373,13 @@ export function TimerView({ onOpenSheet }: TimerViewProps) {
                           >
                             {task.name}
                           </span>
-                          <span className="font-tech mt-0.5 flex items-center gap-2 text-[0.6875rem] text-ink-3">
-                            <span>
-                              {task.done}/{task.planned} poms
-                            </span>
-                            <span className="h-1 w-1 rounded-full bg-track" aria-hidden />
-                            <span>
-                              {Math.round((task.planned ? task.done / task.planned : 0) * 100)}%
-                            </span>
+                          {/* One textual signal; the bar below carries the glanceable one. */}
+                          <span className="font-tech mt-0.5 block text-[0.6875rem] text-ink-3">
+                            {task.done}/{task.planned} poms
                           </span>
                         </span>
                       </button>
-                      <span className="flex flex-shrink-0 items-center gap-0.5">
-                        {Array.from({ length: Math.min(task.planned, 6) }, (_, i) => (
-                          <span
-                            key={i}
-                            className={`ml-0.5 h-2 w-2 rounded-full ${
-                              i < task.done ? 'bg-move' : 'bg-track'
-                            }`}
-                            aria-hidden
-                          />
-                        ))}
-                        <ChevronDown size={15} className="ml-1 text-ink-3" />
+                      <span className="flex flex-shrink-0 items-center">
                         <button
                           type="button"
                           aria-label={`Remove ${task.name}`}
@@ -404,7 +402,8 @@ export function TimerView({ onOpenSheet }: TimerViewProps) {
                   </li>
                 );
               })}
-            </ul>
+              </ul>
+            </details>
           )}
         </div>
 

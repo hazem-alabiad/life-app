@@ -29,7 +29,7 @@ Being explicit about this matters more than looking finished.
 | --- | --- | --- |
 | Exercise catalogue | 41 hand-written movements in `src/data/exercises.ts` | ExerciseDB — map its shape onto `Exercise` |
 | Movement art | Locally drawn SVG tiles (`ExerciseArt`) | ExerciseDB animated GIFs |
-| Meal analysis | On-device heuristic in `src/lib/recognize.ts`: hashes the photo, picks a plausible entry from a seeded food table | A vision model behind the same `estimateMeal` signature |
+| Meal analysis | Parked — no nourish module ships in this build | A vision model behind an `estimateMeal` signature, if it returns |
 | Daily insights | Curated written set in `src/data/insights.ts`, rotated by day | A feed, if you ever want one |
 | Workout suggestions | Deterministic "least recently trained" ranking | A model, behind `suggestWorkout` |
 | Storage | `localStorage`, versioned and migrated on read | already here: see [Cloud sync](#cloud-sync) |
