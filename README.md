@@ -12,7 +12,7 @@ GitHub sign-in mirrors your data to Supabase; see [Cloud sync](#cloud-sync) belo
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
+npm run dev        # http://localhost:8000 (pinned in vite.config.ts so the Supabase OAuth callback lands back on the running app)
 npm run build      # type-checks, then builds to dist/
 npm run preview    # serve the production build
 npm run typecheck
@@ -87,7 +87,11 @@ Setup (one-time, each step is manual by design):
    the Supabase SQL editor.
 2. Enable the GitHub provider in Supabase Auth, wired to a GitHub OAuth App whose callback
    is `https://<project-ref>.supabase.co/auth/v1/callback`.
-3. Allowlist the app origin in Supabase → Auth → URL Configuration → Redirect URLs.
+3. Allowlist the app origin in Supabase → Auth → URL Configuration → Redirect URLs:
+   `http://localhost:8000`, `http://localhost:5173`, and your production origin
+   (e.g. `https://hazem-alabiad.github.io/life-app/`). If the dev origin is
+   missing, Supabase falls back to the Site URL and the browser lands on a dead
+   `http://localhost:8000/?code=…` page (`ERR_CONNECTION_REFUSED`).
 
 ## Known limits
 

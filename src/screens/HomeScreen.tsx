@@ -35,14 +35,13 @@ function greeting(d: Date): string {
 }
 
 export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout, onStartStretch }: HomeScreenProps) {
-  const { state, dispatch, remainingMs, progress, now } = useStore();
+  const { state, remainingMs, now } = useStore();
   const today = new Date(now);
 
   const stats = weekWorkoutStats(state, today);
   const focusMs = focusTodayMs(state, today);
   const upcoming = nextWorkout(state, today);
 
-  const timerRunning = state.timer.status === 'running';
   const timerVisible = state.timer.status !== 'idle';
   const activeTask = state.tasks.find((t) => t.id === state.timer.taskId) ?? null;
 
@@ -72,8 +71,16 @@ export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout, onStartStr
         </div>
       </div>
 
+      {/* Up next — the single most likely action, so the day starts with one
+          decision instead of three. The module cards below stay as the
+          secondary layer for everything else. */}
+      <UpNext
+        onNavigate={onNavigate}
+        onStartWorkout={onStartWorkout}
+      />
+
       {/* Three module capability cards. */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
         {/* Focus: live timer when active, cycle snapshot when not. */}
         <section className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
           <div className="flex items-center justify-between">
@@ -85,78 +92,39 @@ export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout, onStartStr
             </span>
           </div>
 
-          {timerVisible ? (
-            <>
-              <p className="font-tech tnum mt-4 text-[2.5rem] font-semibold leading-none tracking-tight text-ink">
-                {formatClock(remainingMs)}
-              </p>
-              <p className="mt-2 text-[0.8125rem] text-ink-2">
-                {activeTask?.name ?? 'Deep Work Sprint'}
-              </p>
-              <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-track">
-                <div
-                  className="h-full rounded-full bg-focus transition-[width] duration-500"
-                  style={{ width: `${progress * 100}%` }}
-                />
-              </div>
-              <div className="mt-5 flex items-center gap-2">
-                <Button
-                  accent="focus"
-                  variant="soft"
-                  size="md"
-                  className="flex-1"
-                  icon={timerRunning ? <Pause size={15} /> : <Play size={15} />}
-                  onClick={() =>
-                    dispatch(
-                      timerRunning
-                        ? { type: 'timer/pause', now: Date.now() }
-                        : { type: 'timer/start', now: Date.now() },
-                    )
-                  }
-                >
-                  {timerRunning ? 'Pause' : 'Resume'}
-                </Button>
-                <Button
-                  accent="focus"
-                  variant="soft"
-                  size="sm"
-                  aria-label="Open the timer"
-                  onClick={() => onNavigate('focus')}
-                >
-                  <ArrowRight size={15} />
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="font-tech tnum mt-4 text-[2.5rem] font-semibold leading-none text-ink">
-                {String(state.settings.pomodoroMin).padStart(2, '0')}:00
-              </p>
-              <p className="mt-2 text-[0.8125rem] text-ink-2">
-                {formatFocusLength(focusMs)} focused today
-              </p>
-              <div className="mt-5 flex items-center gap-2">
-                <Button
-                  accent="focus"
-                  size="md"
-                  className="flex-1"
-                  icon={<Play size={15} />}
-                  onClick={() => onNavigate('focus')}
-                >
-                  Start sprint
-                </Button>
-                <Button
-                  accent="focus"
-                  variant="soft"
-                  size="sm"
-                  aria-label="Open focus module"
-                  onClick={() => onNavigate('focus')}
-                >
-                  <ArrowRight size={15} />
-                </Button>
-              </div>
-            </>
-          )}
+          {/* Live sprint control lives in Up next above; this card stays a
+              quiet snapshot plus one door in. */}
+          <p className="font-tech tnum mt-4 text-[2.5rem] font-semibold leading-none text-ink">
+            {timerVisible
+              ? formatClock(remainingMs)
+              : `${String(state.settings.pomodoroMin).padStart(2, '0')}:00`}
+          </p>
+          <p className="mt-2 text-[0.8125rem] text-ink-2">
+            {timerVisible
+              ? (activeTask?.name ?? 'Deep Work Sprint')
+              : `${formatFocusLength(focusMs)} focused today`}
+          </p>
+          <div className="mt-5 flex items-center gap-2">
+            <Button
+              accent="focus"
+              variant="soft"
+              size="md"
+              className="flex-1"
+              icon={<Play size={15} />}
+              onClick={() => onNavigate('focus')}
+            >
+              Open focus
+            </Button>
+            <Button
+              accent="focus"
+              variant="soft"
+              size="sm"
+              aria-label="Open focus module"
+              onClick={() => onNavigate('focus')}
+            >
+              <ArrowRight size={15} />
+            </Button>
+          </div>
         </section>
 
         {/* Movement: weekly rhythm + next session. */}
@@ -264,6 +232,117 @@ export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout, onStartStr
         />
       </div>
     </div>
+  );
+}
+
+/** The day's single next action: resume a live sprint, start today's
+    workout, or bank the first sprint of a clear day. */
+function UpNext({
+  onNavigate,
+  onStartWorkout,
+}: {
+  onNavigate: (tab: TabId) => void;
+  onStartWorkout: (workout: Workout) => void;
+}) {
+  const { state, dispatch, remainingMs, now } = useStore();
+  const today = new Date(now);
+  const upcoming = nextWorkout(state, today);
+
+  const timerRunning = state.timer.status === 'running';
+  const timerVisible = state.timer.status !== 'idle';
+  const activeTask = state.tasks.find((t) => t.id === state.timer.taskId) ?? null;
+
+  if (timerVisible) {
+    return (
+      <section className="rounded-[var(--radius-card)] border border-focus/40 bg-surface p-5">
+        <span className="text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
+          Up next
+        </span>
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-tech tnum text-[2rem] font-semibold leading-none tracking-tight text-ink">
+              {formatClock(remainingMs)}
+            </p>
+            <p className="mt-1.5 truncate text-[0.8125rem] text-ink-2">
+              {activeTask?.name ?? 'Deep Work Sprint'} · {timerRunning ? 'in flow' : 'paused'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              accent="focus"
+              size="md"
+              icon={timerRunning ? <Pause size={15} /> : <Play size={15} />}
+              onClick={() =>
+                dispatch(
+                  timerRunning
+                    ? { type: 'timer/pause', now: Date.now() }
+                    : { type: 'timer/start', now: Date.now() },
+                )
+              }
+            >
+              {timerRunning ? 'Pause' : 'Resume'}
+            </Button>
+            <Button accent="focus" variant="soft" size="md" onClick={() => onNavigate('focus')}>
+              Open timer
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (upcoming && upcoming.daysAway === 0) {
+    return (
+      <section className="rounded-[var(--radius-card)] border border-move/40 bg-surface p-5">
+        <span className="text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
+          Up next
+        </span>
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="truncate font-display text-[1.375rem] font-semibold tracking-tight text-ink">
+              {upcoming.workout.name}
+            </p>
+            <p className="mt-1 text-[0.8125rem] text-ink-2">
+              {upcoming.workout.durationMin} min · {upcoming.workout.items.length} exercises
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              accent="move"
+              size="md"
+              icon={<Play size={15} />}
+              onClick={() => onStartWorkout(upcoming.workout)}
+            >
+              Start workout
+            </Button>
+            <Button accent="move" variant="soft" size="md" onClick={() => onNavigate('move')}>
+              View plan
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
+      <span className="text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
+        Up next
+      </span>
+      <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className="font-display text-[1.375rem] font-semibold tracking-tight text-ink">
+            A clear day
+          </p>
+          <p className="mt-1 text-[0.8125rem] text-ink-2">
+            Bank one sprint to start the rhythm.
+          </p>
+        </div>
+        <Button accent="focus" size="md" icon={<Play size={15} />} onClick={() => onNavigate('focus')}>
+          Start sprint
+        </Button>
+      </div>
+    </section>
   );
 }
 

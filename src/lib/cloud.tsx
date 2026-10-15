@@ -160,8 +160,30 @@ function CloudProviderInner({
   useEffect(() => {
     if (!client) return;
     let active = true;
-    void client.auth.getSession().then(({ data }) => {
-      if (active) setSession(data.session);
+    void client.auth.getSession().then(({ data, error }) => {
+      if (!active) return;
+      if (error != null) {
+        // Surfaces a stranded OAuth return (e.g. `?code=` landed where the
+        // code exchange failed) instead of leaving the user signed out with
+        // no explanation.
+        setErrorMessage(error.message);
+        setStatus('error');
+      }
+      setSession(data.session);
+      // The PKCE `?code=` (or `?error=`) params are single-use. Strip them
+      // once the client has consumed the return URL so a reload never
+      // replays a spent code.
+      try {
+        const url = new globalThis.URL(window.location.href);
+        if (url.searchParams.has('code') || url.searchParams.has('error')) {
+          url.searchParams.delete('code');
+          url.searchParams.delete('error');
+          url.searchParams.delete('error_description');
+          window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+        }
+      } catch {
+        // Never crash over URL cleanup.
+      }
     });
     const { data: sub } = client.auth.onAuthStateChange((_event, next) => {
       setSession(next);
@@ -259,9 +281,36 @@ function CloudProviderInner({
   }, [session]);
 
   const signIn = useCallback(() => {
-    void getClient().then((c) =>
-      c?.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: window.location.href } }),
-    );
+    // Every failure path lands in errorMessage: a click that silently does
+    // nothing is the bug being fixed (unconfigured build, failed SDK chunk
+    // load, disabled provider, or rejected redirect URL all used to vanish).
+    setErrorMessage(null);
+    void getClient()
+      .then(async (c) => {
+        if (!c) {
+          throw new Error(
+            'Cloud sync is not configured in this build — add VITE_SUPABASE_URL and ' +
+              'VITE_SUPABASE_ANON_KEY, then restart the dev server.',
+          );
+        }
+        // `origin` (not `href`): the callback must land on the app root where
+        // the Supabase client is loaded so `detectSessionInUrl` can exchange
+        // the PKCE code. A full href would replay a sheet route or query string
+        // on return and risks missing the allowlist in Supabase → Auth → URL
+        // Configuration → Redirect URLs.
+        // The SDK navigates to GitHub itself (`location.assign`) unless this
+        // call returns an error — e.g. GitHub provider disabled in Supabase
+        // Auth, or this origin missing from Redirect URLs.
+        const { error } = await c.auth.signInWithOAuth({
+          provider: 'github',
+          options: { redirectTo: window.location.origin },
+        });
+        if (error != null) throw error;
+      })
+      .catch((e: unknown) => {
+        setErrorMessage(e instanceof Error ? e.message : String(e));
+        setStatus('error');
+      });
   }, []);
 
   const signOut = useCallback(async () => {

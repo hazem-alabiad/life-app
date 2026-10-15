@@ -26,6 +26,7 @@ export function ScheduleView({
   onStartWorkout,
   onStartStretch,
   onAddWorkout,
+  onOpenExercise,
 }: ScheduleViewProps) {
   const { state } = useStore();
   const strip = weekStrip(new Date());
@@ -102,9 +103,9 @@ export function ScheduleView({
       </section>
 
       {featured && (
-        <div className="grid gap-4 lg:grid-cols-12 lg:items-start">
+        <div>
           {/* Recommended today. */}
-          <section className="space-y-4 lg:col-span-8">
+          <section className="space-y-4">
             <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
               <div className="flex flex-wrap items-start justify-between gap-3 pb-4">
                 <span className="inline-flex items-center rounded-lg bg-move/15 px-2.5 py-1 text-[0.6875rem] font-semibold text-move">
@@ -129,22 +130,26 @@ export function ScheduleView({
                   const exercise = getExercise(item.exerciseId);
                   if (!exercise) return null;
                   return (
-                    <li
-                      key={item.exerciseId}
-                      className="flex items-center gap-3 rounded-xl border border-line bg-canvas p-3"
-                    >
-                      <ExerciseArt exercise={exercise} size={52} rounded="rounded-lg" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-display text-[0.9375rem] font-medium text-ink">
-                          {exercise.name}
-                        </p>
-                        <p className="font-tech mt-0.5 text-[0.72rem] font-medium text-move">
-                          {item.sets} sets × {exercise.holdSeconds ? `${exercise.holdSeconds}s` : '10 reps'}
-                        </p>
-                        <p className="truncate text-[0.6875rem] text-ink-3">
-                          {exercise.target}
-                        </p>
-                      </div>
+                    <li key={item.exerciseId}>
+                      <button
+                        type="button"
+                        onClick={() => onOpenExercise(item.exerciseId)}
+                        aria-label={`${exercise.name}, ${exercise.target}`}
+                        className="flex w-full items-center gap-3 rounded-xl border border-line bg-canvas p-3 text-left transition-colors hover:bg-surface-2 active:opacity-90"
+                      >
+                        <ExerciseArt exercise={exercise} size={52} rounded="rounded-lg" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-display text-[0.9375rem] font-medium text-ink">
+                            {exercise.name}
+                          </p>
+                          <p className="font-tech mt-0.5 text-[0.72rem] font-medium text-move">
+                            {item.sets} sets × {exercise.holdSeconds ? `${exercise.holdSeconds}s` : '10 reps'}
+                          </p>
+                          <p className="truncate text-[0.6875rem] text-ink-3">
+                            {exercise.target}
+                          </p>
+                        </div>
+                      </button>
                     </li>
                   );
                 })}
