@@ -1,4 +1,4 @@
-import { Cloud, CloudOff, Github, LogOut, RefreshCw, Moon, Monitor, Sun } from 'lucide-react';
+import { Cloud, CloudOff, Download, Github, LogOut, RefreshCw, Moon, Monitor, Sun } from 'lucide-react';
 import { Sheet } from '../../components/Sheet';
 import { Button } from '../../components/Button';
 import { Segmented, SheetSection, Stepper } from '../../components/Controls';
@@ -18,6 +18,23 @@ export function SettingsSheet({
   const { state, dispatch } = useStore();
   const { settings } = state;
   const patch = (next: Partial<typeof settings>) => dispatch({ type: 'settings/patch', patch: next });
+
+  // Portable local backup: the whole store as a dated JSON download.
+  const exportArchive = () => {
+    try {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `life-app-archive-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 5_000);
+    } catch {
+      // A failed download leaves the app untouched; nothing to roll back.
+    }
+  };
 
   return (
     <Sheet open onClose={onClose} title="Settings" subtitle="Small set of dials, nothing hidden">
@@ -57,6 +74,16 @@ export function SettingsSheet({
           step={50}
           onChange={(dailyCalorieGoal) => patch({ dailyCalorieGoal })}
         />
+        <Stepper
+          label="Daily water"
+          description="Drives the hydration row in Fuel"
+          value={settings.hydrationGoalMl}
+          unit="ml"
+          min={1000}
+          max={5000}
+          step={250}
+          onChange={(hydrationGoalMl) => patch({ hydrationGoalMl })}
+        />
       </SheetSection>
 
       <SheetSection title="Stretching">
@@ -93,9 +120,19 @@ export function SettingsSheet({
       <SheetSection title="Data">
         <div className="py-3">
           <p className="text-[0.75rem] leading-5 text-ink-3">
-            Everything lives in this browser only — no account, no server, nothing leaves the
-            device. Clearing site data clears the app.
+            Everything lives in this browser, plus your cloud copy when signed in. Clearing
+            site data clears the local app.
           </p>
+          <Button
+            accent="focus"
+            variant="ghost"
+            size="sm"
+            className="mt-3"
+            icon={<Download size={14} />}
+            onClick={exportArchive}
+          >
+            Export data archive
+          </Button>
           {state.demoSeeded ? (
             <Button
               accent="focus"
