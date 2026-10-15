@@ -3,6 +3,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  GripVertical,
   Headphones,
   Pause,
   Play,
@@ -63,6 +64,16 @@ export function TimerView({ onOpenSheet }: TimerViewProps) {
     timer.completedInCycle > 0
       ? Math.round((timer.completedInCycle / settings.sessionsBeforeLong) * 100)
       : 0;
+
+  // Drag-and-drop reorder state. Native HTML5 DnD — no library, no bundle
+  // cost. Pointer path only: touch and keyboard users get the up/down
+  // chevrons on every row, which dispatch the same order change.
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const endDrag = () => {
+    setDragId(null);
+    setDropIndex(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -320,9 +331,41 @@ export function TimerView({ onOpenSheet }: TimerViewProps) {
               <ul className="divide-y divide-line border-t border-line">
               {tasks.map((task, index) => {
                 const selected = task.id === timer.taskId;
+                const isDragged = dragId === task.id;
+                const isDropTarget = dropIndex === index && dragId != null && !isDragged;
                 return (
-                  <li key={task.id} className="px-4 py-3 md:px-5">
-                    <div className="flex items-center gap-2">
+                  <li
+                    key={task.id}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      if (dropIndex !== index) setDropIndex(index);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (dragId) dispatch({ type: 'task/move', id: dragId, toIndex: index });
+                      endDrag();
+                    }}
+                    className={`px-4 py-3 transition-colors md:px-5 ${
+                      isDragged ? 'opacity-50' : ''
+                    } ${isDropTarget ? 'bg-focus-soft/40' : ''}`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      {/* Drag handle. Not in tab order by design — keyboard
+                          and touch reordering lives on the chevrons beside it. */}
+                      <span
+                        draggable
+                        title={`Drag to reorder ${task.name}`}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', task.id);
+                          e.dataTransfer.effectAllowed = 'move';
+                          setDragId(task.id);
+                        }}
+                        onDragEnd={endDrag}
+                        className="flex h-11 w-6 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 active:cursor-grabbing"
+                      >
+                        <GripVertical size={14} />
+                      </span>
                       <span
                         className="flex flex-shrink-0 flex-col"
                         role="group"
