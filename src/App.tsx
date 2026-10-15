@@ -4,6 +4,8 @@ import { AppHeader } from './components/AppHeader';
 import { HomeScreen } from './screens/HomeScreen';
 import { MoveScreen } from './screens/move/MoveScreen';
 import { FocusScreen } from './screens/focus/FocusScreen';
+import { FuelScreen } from './screens/fuel/FuelScreen';
+import { MealSheet } from './screens/sheets/MealSheet';
 import { WorkoutSession } from './screens/move/WorkoutSession';
 import { StretchFlow } from './screens/move/StretchFlow';
 import { ExerciseSheet } from './screens/sheets/ExerciseSheet';
@@ -19,6 +21,7 @@ const TITLES: Record<TabId, string> = {
   home: 'Today',
   move: 'Movement',
   focus: 'Focus',
+  fuel: 'Fuel',
 };
 
 export function App() {
@@ -89,6 +92,7 @@ export function App() {
             />
           )}
           {tab === 'focus' && <FocusScreen onOpenSheet={setSheet} />}
+          {tab === 'fuel' && <FuelScreen onOpenSheet={setSheet} />}
         </main>
 
         {!session && !stretchOpen && <BottomNav active={tab} onChange={go} />}
@@ -160,6 +164,10 @@ function Sheets({
       return <AddTaskSheet onClose={onClose} />;
     case 'edit-task':
       return <AddTaskSheet onClose={onClose} taskId={sheet.taskId} />;
+    case 'add-meal':
+      return <MealSheet onClose={onClose} />;
+    case 'edit-meal':
+      return <MealSheet onClose={onClose} mealId={sheet.mealId} />;
     case 'insight':
       return <InsightSheet onClose={onClose} />;
     case 'settings':

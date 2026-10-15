@@ -1,4 +1,4 @@
-import type { AppState, SessionRecord, Workout } from '../types';
+import type { AppState, MealRecord, SessionRecord, Workout } from '../types';
 import { addDays, dateKey, isSameDay, startOfWeek, todayKey } from './date';
 
 export interface WeekWorkoutStats {
@@ -104,4 +104,55 @@ export function focusWeekSummary(state: AppState, now = new Date()): FocusWeekSu
 
 export function isToday(key: string, now = new Date()): boolean {
   return key === todayKey(now);
+}
+
+/* --------------------------------------------------------------- nourish */
+
+/** Today's meals in logged order, planned meals included. */
+export function mealsForDay(state: AppState, day: Date): MealRecord[] {
+  return state.meals
+    .filter((m) => isSameDay(new Date(m.loggedAt), day))
+    .sort((a, b) => a.loggedAt - b.loggedAt);
+}
+
+export interface DayNutrition {
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  logged: number;
+  planned: number;
+}
+
+/** The ring counts eaten meals only; planned ones stay faint until logged. */
+export function dayNutrition(state: AppState, day: Date): DayNutrition {
+  const meals = mealsForDay(state, day);
+  const eaten = meals.filter((m) => !m.planned);
+  const sum = (pick: (m: MealRecord) => number) => eaten.reduce((total, m) => total + pick(m), 0);
+  return {
+    calories: sum((m) => m.calories),
+    proteinG: sum((m) => m.proteinG),
+    carbsG: sum((m) => m.carbsG),
+    fatG: sum((m) => m.fatG),
+    logged: eaten.length,
+    planned: meals.length - eaten.length,
+  };
+}
+
+/** Macro targets derived from the calorie goal on a 30/40/30 split. */
+export function macroGoals(dailyCalorieGoal: number): { proteinG: number; carbsG: number; fatG: number } {
+  return {
+    proteinG: Math.round((dailyCalorieGoal * 0.3) / 4),
+    carbsG: Math.round((dailyCalorieGoal * 0.4) / 4),
+    fatG: Math.round((dailyCalorieGoal * 0.3) / 9),
+  };
+}
+
+export function hydrationForDay(state: AppState, day: Date): number {
+  return state.hydration[dateKey(day)] ?? 0;
+}
+
+/** 1-based day count since first launch, for the "Day N" marker. */
+export function dayNumber(firstLaunchAt: number, now = new Date()): number {
+  return Math.max(1, Math.floor((now.getTime() - firstLaunchAt) / 86_400_000) + 1);
 }

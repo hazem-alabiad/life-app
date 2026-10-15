@@ -4,6 +4,7 @@ import {
   Dumbbell,
   House,
   Plus,
+  Salad,
   Settings2,
   StretchVertical,
   Target,
@@ -27,6 +28,7 @@ const MODULES: NavEntry[] = [
   { id: 'home', label: 'Today', icon: House },
   { id: 'move', label: 'Movement', icon: Dumbbell },
   { id: 'focus', label: 'Focus', icon: Target },
+  { id: 'fuel', label: 'Fuel', icon: Salad },
 ];
 
 /**
@@ -104,6 +106,7 @@ export function BottomNav({ active, onChange }: MobileNavProps) {
     { id: 'home', label: 'Today', icon: House },
     { id: 'move', label: 'Move', icon: Dumbbell },
     { id: 'focus', label: 'Focus', icon: Target },
+    { id: 'fuel', label: 'Fuel', icon: Salad },
   ];
 
   return (
@@ -163,6 +166,7 @@ export function HeaderActions({ onNavigate, onOpenSettings }: HeaderActionsProps
   const actions: Array<{ label: string; tab: TabId }> = [
     { label: 'Start a sprint', tab: 'focus' },
     { label: 'Plan a workout', tab: 'move' },
+    { label: 'Log a meal', tab: 'fuel' },
   ];
 
   return (

@@ -34,4 +34,13 @@ export const ACCENT: Record<
     glow: 'shadow-[0_0_40px_-10px_rgba(34,211,238,0.45)]',
     hex: '#22D3EE',
   },
+  nourish: {
+    text: 'text-nourish',
+    bg: 'bg-nourish',
+    soft: 'bg-nourish-soft',
+    border: 'border-nourish/40',
+    ink: 'text-nourish-ink',
+    glow: 'shadow-[0_0_40px_-10px_rgba(52,211,153,0.45)]',
+    hex: '#34D399',
+  },
 };

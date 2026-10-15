@@ -1,4 +1,4 @@
-import type { FocusTask, Schedule, SessionRecord } from '../types';
+import type { FocusTask, MealRecord, Schedule, SessionRecord } from '../types';
 import { addDays, dateKey, startOfWeek } from '../lib/date';
 import { buildWorkout, WORKOUT_TEMPLATES } from './workouts';
 
@@ -55,6 +55,20 @@ export function seedSessions(now = new Date()): SessionRecord[] {
       };
     })
     .filter((s): s is SessionRecord => s !== null);
+}
+
+export function seedMeals(now = new Date()): MealRecord[] {
+  const at = (hours: number, minutes: number) => {
+    const d = new Date(now);
+    d.setHours(hours, minutes, 0, 0);
+    return d.getTime();
+  };
+  const meals: MealRecord[] = [
+    { id: 'seed_meal_1', name: 'Overnight oats & berries', kind: 'breakfast', loggedAt: at(8, 15), calories: 420, proteinG: 18, carbsG: 62, fatG: 12 },
+    { id: 'seed_meal_2', name: 'Chicken grain bowl', kind: 'lunch', loggedAt: at(12, 45), calories: 640, proteinG: 42, carbsG: 55, fatG: 20 },
+  ];
+  // Skip anything that has not happened yet.
+  return meals.filter((m) => m.loggedAt <= now.getTime());
 }
 
 export function seedTasks(now = new Date()): FocusTask[] {
