@@ -6,6 +6,7 @@ import {
   GripVertical,
   Headphones,
   Pause,
+  Pencil,
   Play,
   Plus,
   RotateCcw,
@@ -425,6 +426,14 @@ export function TimerView({ onOpenSheet }: TimerViewProps) {
                       <span className="flex flex-shrink-0 items-center">
                         <button
                           type="button"
+                          aria-label={`Edit ${task.name}`}
+                          onClick={() => onOpenSheet({ kind: 'edit-task', taskId: task.id })}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          type="button"
                           aria-label={`Remove ${task.name}`}
                           onClick={() => dispatch({ type: 'task/remove', id: task.id })}
                           className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2"
@@ -438,7 +447,7 @@ export function TimerView({ onOpenSheet }: TimerViewProps) {
                       <div
                         className="h-full rounded-full bg-nourish transition-[width] duration-500"
                         style={{
-                          width: `${(task.planned ? (task.done / task.planned) * 100 : 0) * 0.999}%`,
+                          width: `${Math.min(100, (task.planned ? (task.done / task.planned) * 100 : 0))}%`,
                         }}
                       />
                     </div>

@@ -169,6 +169,7 @@ export type SheetKind =
   | { kind: 'focus-settings' }
   | { kind: 'insight' }
   | { kind: 'add-task' }
+  | { kind: 'edit-task'; taskId: string }
   | { kind: 'settings' }
   | null;
 
