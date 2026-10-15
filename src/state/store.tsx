@@ -105,6 +105,7 @@ export type Action =
   | { type: 'task/add'; name: string; planned: number }
   | { type: 'task/remove'; id: string }
   | { type: 'task/reorder'; id: string; direction: -1 | 1 }
+  | { type: 'task/move'; id: string; toIndex: number }
   | { type: 'task/select'; id: string | null }
   | { type: 'task/complete-pomodoro'; id: string }
   | { type: 'timer/setMode'; mode: TimerMode; durationMs: number; status?: TimerState['status'] }
@@ -178,6 +179,17 @@ export function reducer(state: AppState, action: Action): AppState {
       const tasks = [...state.tasks];
       const [moved] = tasks.splice(index, 1);
       tasks.splice(target, 0, moved);
+      return { ...state, tasks };
+    }
+
+    case 'task/move': {
+      // Absolute counterpart to task/reorder, driven by drag-and-drop.
+      // Selection and progress travel with the task: only array order changes.
+      const from = state.tasks.findIndex((t) => t.id === action.id);
+      if (from < 0) return state;
+      const tasks = [...state.tasks];
+      const [moved] = tasks.splice(from, 1);
+      tasks.splice(Math.min(Math.max(0, action.toIndex), tasks.length), 0, moved);
       return { ...state, tasks };
     }
 
