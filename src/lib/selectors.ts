@@ -152,6 +152,33 @@ export function hydrationForDay(state: AppState, day: Date): number {
   return state.hydration[dateKey(day)] ?? 0;
 }
 
+/** Local-date keys with any logged life: workout, focus, meal, or water. */
+export function activeDayKeys(state: AppState): Set<string> {
+  const keys = new Set<string>();
+  for (const s of state.sessions) keys.add(dateKey(new Date(s.completedAt)));
+  for (const r of state.focusHistory) keys.add(dateKey(new Date(r.endedAt)));
+  for (const m of state.meals) {
+    if (!m.planned) keys.add(dateKey(new Date(m.loggedAt)));
+  }
+  for (const [key, ml] of Object.entries(state.hydration)) {
+    if (ml > 0) keys.add(key);
+  }
+  return keys;
+}
+
+/** Consecutive active days ending today (or yesterday, if today is still blank). */
+export function rhythmCount(state: AppState, now = new Date()): number {
+  const active = activeDayKeys(state);
+  let cursor = new Date(now);
+  if (!active.has(dateKey(cursor))) cursor = addDays(cursor, -1);
+  let count = 0;
+  while (active.has(dateKey(cursor))) {
+    count += 1;
+    cursor = addDays(cursor, -1);
+  }
+  return count;
+}
+
 /** 1-based day count since first launch, for the "Day N" marker. */
 export function dayNumber(firstLaunchAt: number, now = new Date()): number {
   return Math.max(1, Math.floor((now.getTime() - firstLaunchAt) / 86_400_000) + 1);
