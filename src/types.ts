@@ -1,8 +1,8 @@
-/** The three destinations in the bottom dock; Fuel is parked for now. */
-export type TabId = 'home' | 'move' | 'focus';
+/** The four destinations in the bottom dock. */
+export type TabId = 'home' | 'move' | 'focus' | 'fuel';
 
 /** Every accent colour in the app belongs to exactly one module. */
-export type AccentName = 'move' | 'focus';
+export type AccentName = 'move' | 'focus' | 'nourish';
 
 /* ------------------------------------------------------------------ move */
 
@@ -129,6 +129,22 @@ export interface FocusSessionRecord {
 
 /* --------------------------------------------------------------- nourish */
 
+export type MealKind = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
+export interface MealRecord {
+  id: string;
+  name: string;
+  kind: MealKind;
+  /** Epoch ms when logged (or planned for). */
+  loggedAt: number;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  /** Planned meals render faintly until logged. */
+  planned?: boolean;
+}
+
 /* -------------------------------------------------------------- settings */
 
 export interface Settings {
@@ -141,6 +157,7 @@ export interface Settings {
   eyeRest: boolean;
   weeklyWorkoutGoal: number;
   dailyCalorieGoal: number;
+  hydrationGoalMl: number;
   stretchGoal: StretchGoal;
   /** When the app was first opened, used to fade nav labels after a week. */
   firstLaunchAt: number;
@@ -155,6 +172,9 @@ export interface AppState {
   schedule: Schedule;
   sessions: SessionRecord[];
   tasks: FocusTask[];
+  meals: MealRecord[];
+  /** Water intake in ml, keyed by local date `yyyy-mm-dd`. */
+  hydration: Record<string, number>;
   timer: TimerState;
   focusHistory: FocusSessionRecord[];
 }
@@ -170,6 +190,8 @@ export type SheetKind =
   | { kind: 'insight' }
   | { kind: 'add-task' }
   | { kind: 'edit-task'; taskId: string }
+  | { kind: 'add-meal' }
+  | { kind: 'edit-meal'; mealId: string }
   | { kind: 'settings' }
   | null;
 

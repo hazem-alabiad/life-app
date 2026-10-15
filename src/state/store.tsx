@@ -13,6 +13,8 @@ import type {
   AppState,
   FocusSessionRecord,
   FocusTask,
+  MealKind,
+  MealRecord,
   SessionRecord,
   Settings,
   TimerMode,
@@ -20,7 +22,7 @@ import type {
   Workout,
 } from '../types';
 import { newId } from '../lib/id';
-import { seedSchedule, seedSessions, seedTasks } from '../data/demo';
+import { seedMeals, seedSchedule, seedSessions, seedTasks } from '../data/demo';
 import { CloudProvider, cloudConfigured } from '../lib/cloud';
 import type { AppState as ExternalState } from '../types';
 
@@ -53,6 +55,7 @@ export function defaultSettings(now = Date.now()): Settings {
     eyeRest: true,
     weeklyWorkoutGoal: 5,
     dailyCalorieGoal: 2200,
+    hydrationGoalMl: 2500,
     stretchGoal: 'back',
     firstLaunchAt: now,
     stretchOnboardingDone: false,
@@ -81,6 +84,12 @@ export const modeMinutes = (settings: Settings, mode: TimerMode): number => {
 export const modeDurationMs = (settings: Settings, mode: TimerMode): number =>
   Math.max(1, modeMinutes(settings, mode)) * 60_000;
 
+/** Meal numbers are free-form input: coerce to a sane finite range. */
+function clampMeal(value: number, max: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(max, Math.max(0, Math.round(value)));
+}
+
 export function initialState(now = new Date()): AppState {
   const settings = defaultSettings(now.getTime());
   return {
@@ -90,6 +99,8 @@ export function initialState(now = new Date()): AppState {
     schedule: seedSchedule(now),
     sessions: seedSessions(now),
     tasks: seedTasks(now),
+    meals: seedMeals(now),
+    hydration: {},
     timer: idleTimer('focus', modeDurationMs(settings, 'focus')),
     focusHistory: [],
   };
@@ -114,7 +125,10 @@ export type Action =
   | { type: 'timer/pause'; now: number }
   | { type: 'timer/reset'; durationMs: number }
   | { type: 'timer/finish'; now: number; durationMs: (mode: TimerMode) => number }
+  | { type: 'meal/add'; name: string; kind: MealKind; loggedAt: number; calories: number; proteinG: number; carbsG: number; fatG: number; planned?: boolean }
+  | { type: 'meal/edit'; id: string; name: string; kind: MealKind; calories: number; proteinG: number; carbsG: number; fatG: number; planned?: boolean }
   | { type: 'meal/remove'; id: string }
+  | { type: 'hydration/add'; day: string; ml: number }
   | { type: 'cloud/restore'; state: ExternalState }
   | { type: 'demo/clear' };
 
@@ -202,6 +216,53 @@ export function reducer(state: AppState, action: Action): AppState {
       const [moved] = tasks.splice(from, 1);
       tasks.splice(Math.min(Math.max(0, action.toIndex), tasks.length), 0, moved);
       return { ...state, tasks };
+    }
+
+    case 'meal/add': {
+      const name = action.name.trim();
+      if (name.length < 2) return state;
+      const meal: MealRecord = {
+        id: newId('meal'),
+        name,
+        kind: action.kind,
+        loggedAt: action.loggedAt,
+        calories: clampMeal(action.calories, 5000),
+        proteinG: clampMeal(action.proteinG, 500),
+        carbsG: clampMeal(action.carbsG, 500),
+        fatG: clampMeal(action.fatG, 500),
+        planned: action.planned,
+      };
+      return { ...state, meals: [...state.meals, meal] };
+    }
+
+    case 'meal/edit': {
+      const name = action.name.trim();
+      if (name.length < 2) return state;
+      return {
+        ...state,
+        meals: state.meals.map((m) =>
+          m.id === action.id
+            ? {
+                ...m,
+                name,
+                kind: action.kind,
+                calories: clampMeal(action.calories, 5000),
+                proteinG: clampMeal(action.proteinG, 500),
+                carbsG: clampMeal(action.carbsG, 500),
+                fatG: clampMeal(action.fatG, 500),
+                planned: action.planned,
+              }
+            : m,
+        ),
+      };
+    }
+
+    case 'meal/remove':
+      return { ...state, meals: state.meals.filter((m) => m.id !== action.id) };
+
+    case 'hydration/add': {
+      const next = Math.min(5000, Math.max(0, Math.round((state.hydration[action.day] ?? 0) + action.ml)));
+      return { ...state, hydration: { ...state.hydration, [action.day]: next } };
     }
 
     case 'task/select':
@@ -325,7 +386,14 @@ export function reducer(state: AppState, action: Action): AppState {
       const timer = restored.timer.status === 'running'
         ? { ...restored.timer, status: 'paused' as const, endsAt: null, remainingMs: restored.timer.durationMs }
         : restored.timer;
-      return { ...restored, version: STATE_VERSION, timer, savedAt: new Date().toISOString() };
+      return {
+        ...restored,
+        version: STATE_VERSION,
+        timer,
+        meals: Array.isArray(restored.meals) ? restored.meals : [],
+        hydration: restored.hydration ?? {},
+        savedAt: new Date().toISOString(),
+      };
     }
 
     case 'demo/clear':
@@ -334,6 +402,7 @@ export function reducer(state: AppState, action: Action): AppState {
         demoSeeded: false,
         sessions: state.sessions.filter((s) => !s.id.startsWith('seed_sess_')),
         tasks: state.tasks.filter((t) => !t.id.startsWith('seed_task_')),
+        meals: state.meals.filter((m) => !m.id.startsWith('seed_meal_')),
       };
 
     default:
@@ -351,6 +420,9 @@ function loadState(): AppState {
     if (parsed.version !== STATE_VERSION) return initialState();
     // Settings gained over time must not leave holes in stored state.
     parsed.settings = { ...defaultSettings(parsed.settings.firstLaunchAt), ...parsed.settings };
+    // Meals and hydration arrived after v1 shipped; old snapshots lack them.
+    if (!Array.isArray(parsed.meals)) parsed.meals = [];
+    if (parsed.hydration == null || typeof parsed.hydration !== 'object') parsed.hydration = {};
     if (parsed.timer?.status === 'running' && parsed.timer.endsAt == null) {
       parsed.timer = { ...parsed.timer, status: 'paused', endsAt: null };
     }
