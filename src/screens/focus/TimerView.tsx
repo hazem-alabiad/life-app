@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Check,
   ChevronDown,
-  GripVertical,
+  ChevronUp,
   Headphones,
   Pause,
   Play,
@@ -305,12 +305,35 @@ export function TimerView({ onOpenSheet }: TimerViewProps) {
             </div>
           ) : (
             <ul className="divide-y divide-line border-t border-line">
-              {tasks.map((task) => {
+              {tasks.map((task, index) => {
                 const selected = task.id === timer.taskId;
                 return (
                   <li key={task.id} className="px-4 py-3 md:px-5">
-                    <div className="flex items-center gap-3">
-                      <GripVertical size={14} className="flex-shrink-0 text-ink-3" />
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="flex flex-shrink-0 flex-col"
+                        role="group"
+                        aria-label={`Reorder ${task.name}`}
+                      >
+                        <button
+                          type="button"
+                          aria-label={`Move ${task.name} up`}
+                          disabled={index === 0}
+                          onClick={() => dispatch({ type: 'task/reorder', id: task.id, direction: -1 })}
+                          className="flex h-6 w-6 items-center justify-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 disabled:opacity-30"
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Move ${task.name} down`}
+                          disabled={index === tasks.length - 1}
+                          onClick={() => dispatch({ type: 'task/reorder', id: task.id, direction: 1 })}
+                          className="flex h-6 w-6 items-center justify-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 disabled:opacity-30"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                      </span>
                       <button
                         type="button"
                         onClick={() =>
