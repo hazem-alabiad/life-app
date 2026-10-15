@@ -163,6 +163,11 @@ function CloudSection() {
             <Button accent="focus" size="sm" icon={<Github size={14} />} onClick={cloud.signIn}>
               Continue with GitHub
             </Button>
+            {cloud.status === 'error' && cloud.errorMessage && (
+              <p className="text-[0.75rem] leading-5 text-red-400" role="alert">
+                Sign-in failed: {cloud.errorMessage}
+              </p>
+            )}
             <p className="text-[0.75rem] leading-5 text-ink-3">
               GitHub is the only sign-in. Your data stays in this browser until you sign in; the
               cloud copy is then updated after each change.

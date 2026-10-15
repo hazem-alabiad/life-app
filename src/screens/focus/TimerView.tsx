@@ -15,6 +15,8 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '../../components/Button';
+import { ChipTabs } from '../../components/Chip';
+import { Tag } from '../../components/Chip';
 import { SectionLabel } from '../../components/Card';
 import { Ring } from '../../components/Ring';
 import { useStore } from '../../state/store';
@@ -98,32 +100,18 @@ export function TimerView({ onOpenSheet }: TimerViewProps) {
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {MODES.map((mode) => {
-              const selected = timer.mode === mode.id;
-              return (
-                <button
-                  key={mode.id}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => switchMode(mode.id)}
-                  className={`rounded-full border px-4 py-2 text-[0.8125rem] font-medium transition-colors ${
-                    selected
-                      ? 'border-focus/60 bg-focus-soft text-focus'
-                      : 'border-line bg-surface text-ink-2 hover:bg-surface-2'
-                  }`}
-                >
-                  {mode.label}
-                </button>
-              );
-            })}
-          </div>
+          <ChipTabs<TimerMode>
+            items={MODES}
+            value={timer.mode}
+            onChange={switchMode}
+            accent="focus"
+          />
 
           <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5 md:p-8">
             <div className="flex items-center justify-center">
               <Ring
                 progress={progress}
-                color={isBreak ? 'var(--focus)' : 'var(--focus)'}
+                color="var(--focus)"
                 size={280}
                 stroke={8}
                 glow={running}
@@ -198,18 +186,17 @@ export function TimerView({ onOpenSheet }: TimerViewProps) {
               Synthesized audio hum to mask background chatter and enhance focus coherence.
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                className="flex items-center justify-between rounded-xl border border-line bg-canvas px-3.5 py-3 text-[0.8125rem] text-ink-2 transition-colors hover:bg-surface-2"
-              >
-                Binaural <Volume2 size={14} className="text-ink-3" />
-              </button>
-              <button
-                type="button"
-                className="flex items-center justify-between rounded-xl border border-line bg-canvas px-3.5 py-3 text-[0.8125rem] text-ink-2 transition-colors hover:bg-surface-2"
-              >
-                Pink Rain <Volume2 size={14} className="text-ink-3" />
-              </button>
+              {[ 'Binaural', 'Pink Rain' ].map((name) => (
+                <div
+                  key={name}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-line bg-canvas px-3.5 py-3 text-[0.8125rem] text-ink-3"
+                >
+                  <span className="flex items-center gap-2">
+                    {name} <Volume2 size={14} aria-hidden />
+                  </span>
+                  <Tag>Soon</Tag>
+                </div>
+              ))}
             </div>
           </div>
 

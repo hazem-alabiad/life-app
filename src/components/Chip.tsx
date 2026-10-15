@@ -108,8 +108,8 @@ export function ChipTabs<T extends string>({
             type="button"
             aria-selected={selected}
             onClick={() => onChange(item.id)}
-            className={`flex-shrink-0 rounded-full px-4 py-2 text-[0.8125rem] font-medium transition-colors ${
-              selected ? `${a.soft} ${a.text}` : 'text-ink-3'
+            className={`flex-shrink-0 rounded-full border px-4 py-2 text-[0.8125rem] font-medium transition-colors ${
+              selected ? `${a.soft} ${a.text} ${a.border}` : 'border-transparent text-ink-3'
             }`}
           >
             {item.label}

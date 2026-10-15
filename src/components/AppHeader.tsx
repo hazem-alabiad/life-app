@@ -1,5 +1,6 @@
 import type { TabId } from '../types';
 import { HeaderActions } from './SideNav';
+import { CONTAINER } from './TopBar';
 
 /**
  * App-wide header in the Remix style: the destination title on the left, the
@@ -17,7 +18,7 @@ export function AppHeader({
 }) {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 pt-safe backdrop-blur-xl">
-      <div className="flex h-14 items-center gap-4 px-4 md:px-10">
+      <div className={`${CONTAINER} flex h-14 items-center gap-4`}>
         <h1 className="min-w-0 flex-shrink-0 font-display text-[1.125rem] font-semibold tracking-tight text-ink">
           {title}
         </h1>

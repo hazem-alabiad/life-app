@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CONTAINER } from '../../components/TopBar';
+import { ChipTabs } from '../../components/Chip';
 import { ScheduleView } from './ScheduleView';
 import { ExercisesView } from './ExercisesView';
 import { HistoryView } from './HistoryView';
@@ -30,27 +31,16 @@ export function MoveScreen({
     <>
       {/* App.tsx already renders the page header; this screen only layers
           its own view switcher beneath it. */}
-      {/* View switcher in the Remix pill style. */}
+      {/* View switcher in the shared tab style. */}
       <div className="sticky top-14 z-20 border-b border-line bg-canvas/85 backdrop-blur-xl">
-        <div className={`${CONTAINER} flex flex-wrap items-center gap-2 py-3`}>
-          {VIEWS.map((v) => {
-            const selected = view === v.id;
-            return (
-              <button
-                key={v.id}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => setView(v.id)}
-                className={`rounded-full px-4 py-2 text-[0.8125rem] font-medium transition-colors ${
-                  selected
-                    ? 'bg-move text-move-ink'
-                    : 'border border-line bg-surface text-ink-2 hover:bg-surface-2'
-                }`}
-              >
-                {v.label}
-              </button>
-            );
-          })}
+        <div className={CONTAINER}>
+          <ChipTabs<MoveView>
+            items={VIEWS}
+            value={view}
+            onChange={setView}
+            accent="move"
+            className="py-3"
+          />
         </div>
       </div>
       <div className={`${CONTAINER} pb-40 pt-5 lg:pb-16`}>
