@@ -1,23 +1,26 @@
 import {
-  ArrowRight,
-  Dumbbell,
+  Droplets,
   Pause,
   Play,
   Sparkles,
-  Target,
+  Wind,
 } from 'lucide-react';
 import { CONTAINER } from '../components/TopBar';
 import { Button } from '../components/Button';
 import { useStore } from '../state/store';
 import type { SheetKind, TabId, Workout } from '../types';
-import { formatClock, formatMinutes, pct } from '../lib/format';
+import { formatClock } from '../lib/format';
 import { formatFullDate } from '../lib/date';
+import { addDays, dateKey, weekdayShort } from '../lib/date';
 import {
+  activeDayKeys,
+  dayNutrition,
   focusTodayMs,
+  hydrationForDay,
   nextWorkout,
+  rhythmCount,
   weekWorkoutStats,
 } from '../lib/selectors';
-import { formatFocusLength } from '../lib/format';
 
 interface HomeScreenProps {
   onNavigate: (tab: TabId) => void;
@@ -35,15 +38,11 @@ function greeting(d: Date): string {
 }
 
 export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout, onStartStretch }: HomeScreenProps) {
-  const { state, remainingMs, now } = useStore();
+  const { state, now } = useStore();
   const today = new Date(now);
 
   const stats = weekWorkoutStats(state, today);
-  const focusMs = focusTodayMs(state, today);
-  const upcoming = nextWorkout(state, today);
-
   const timerVisible = state.timer.status !== 'idle';
-  const activeTask = state.tasks.find((t) => t.id === state.timer.taskId) ?? null;
 
   const focusLine = timerVisible
     ? 'Focus sprint active, daily movement on track'
@@ -72,143 +71,38 @@ export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout, onStartStr
       </div>
 
       {/* Up next — the single most likely action, so the day starts with one
-          decision instead of three. The module cards below stay as the
-          secondary layer for everything else. */}
+          decision instead of three. */}
       <UpNext
         onNavigate={onNavigate}
         onStartWorkout={onStartWorkout}
       />
 
-      {/* Three module capability cards. */}
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
-        {/* Focus: live timer when active, cycle snapshot when not. */}
-        <section className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
-              <Target size={13} className="text-focus" /> Focus
-            </span>
-            <span className="font-tech text-[0.6875rem] text-ink-3">
-              cycle {state.timer.completedInCycle + 1} of {state.settings.sessionsBeforeLong}
-            </span>
-          </div>
+      {/* Daily equilibrium: the three pillars as one glanceable ring stack.
+          Each pillar is a door into its module. */}
+      <Equilibrium onNavigate={onNavigate} />
 
-          {/* Live sprint control lives in Up next above; this card stays a
-              quiet snapshot plus one door in. */}
-          <p className="font-tech tnum mt-4 text-[2.5rem] font-semibold leading-none text-ink">
-            {timerVisible
-              ? formatClock(remainingMs)
-              : `${String(state.settings.pomodoroMin).padStart(2, '0')}:00`}
-          </p>
-          <p className="mt-2 text-[0.8125rem] text-ink-2">
-            {timerVisible
-              ? (activeTask?.name ?? 'Deep Work Sprint')
-              : `${formatFocusLength(focusMs)} focused today`}
-          </p>
-          <div className="mt-5 flex items-center gap-2">
-            <Button
-              accent="focus"
-              variant="soft"
-              size="md"
-              className="flex-1"
-              icon={<Play size={15} />}
-              onClick={() => onNavigate('focus')}
-            >
-              Open focus
-            </Button>
-            <Button
-              accent="focus"
-              variant="soft"
-              size="sm"
-              aria-label="Open focus module"
-              onClick={() => onNavigate('focus')}
-            >
-              <ArrowRight size={15} />
-            </Button>
-          </div>
-        </section>
+      {/* 7-day harmony strip + quick desk widgets. */}
+      <Harmony />
+      <QuickWidgets onNavigate={onNavigate} />
 
-        {/* Movement: weekly rhythm + next session. */}
-        <section className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
-              <Dumbbell size={13} className="text-move" /> Movement
-            </span>
-            <span className="font-tech text-[0.6875rem] text-ink-3">
-              {stats.done}/{stats.goal} weekly
-            </span>
-          </div>
-          <p className="mt-4 font-display text-[1.25rem] font-semibold leading-snug text-ink">
-            {upcoming?.workout.name ?? 'Rest day'}
-          </p>
-          <p className="mt-1 text-[0.8125rem] text-ink-2">
-            {upcoming?.workout.durationMin ?? 0} min ·{' '}
-            {upcoming?.workout.items.length ?? 0} exercises
-          </p>
-          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-track">
-            <div
-              className="h-full rounded-full bg-move transition-[width] duration-500"
-              style={{ width: `${pct(stats.done, stats.goal) * 100}%` }}
-            />
-          </div>
-          <div className="mt-5 flex items-center gap-2">
-            {upcoming && (
-              <Button
-                accent="move"
-                size="md"
-                className="flex-1"
-                icon={<Play size={15} />}
-                onClick={() => onStartWorkout(upcoming.workout)}
-              >
-                Start Workout
-              </Button>
-            )}
-            <Button
-              accent="move"
-              variant="soft"
-              size="sm"
-              aria-label="Open movement module"
-              onClick={() => onNavigate('move')}
-            >
-              <ArrowRight size={15} />
-            </Button>
-          </div>
-        </section>
-
-        {/* Recovery snapshot — the third card completes the rhythm picture
-            without its own module. */}
-        <section className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
-              <Sparkles size={13} className="text-focus" /> Rhythm
-            </span>
-            <span className="font-tech text-[0.6875rem] text-ink-3">this week</span>
-          </div>
-          <p className="font-tech tnum mt-4 text-[2.5rem] font-semibold leading-none text-ink">
-            {Math.round(pct(stats.done, stats.goal) * 100)}%
-          </p>
-          <p className="mt-2 text-[0.8125rem] text-ink-2">
-            {formatMinutes(stats.minutes)} moved this week
-          </p>
-          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-track">
-            <div
-              className="h-full rounded-full bg-focus transition-[width] duration-500"
-              style={{ width: `${pct(stats.done, stats.goal) * 100}%` }}
-            />
-          </div>
-          <div className="mt-5 flex items-center gap-2">
-            <Button
-              accent="focus"
-              variant="soft"
-              size="md"
-              className="flex-1"
-              icon={<Sparkles size={15} />}
-              onClick={() => onOpenSheet({ kind: 'insight' })}
-            >
-              Daily insight
-            </Button>
-          </div>
-        </section>
-      </div>
+      {/* One insight card, never more. */}
+      <button
+        type="button"
+        onClick={() => onOpenSheet({ kind: 'insight' })}
+        className="flex w-full items-start gap-3.5 rounded-[var(--radius-card)] border border-line bg-surface p-5 text-left transition-colors hover:bg-surface-2"
+      >
+        <span className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-nourish-soft text-nourish">
+          <Sparkles size={19} />
+        </span>
+        <span>
+          <span className="font-tech block text-[0.6875rem] uppercase tracking-[0.14em] text-nourish">
+            Daily insight
+          </span>
+          <span className="mt-1 block text-[0.8125rem] leading-5 text-ink-2">
+            Open today&apos;s note — one thought on recovery, rhythm, or rest.
+          </span>
+        </span>
+      </button>
 
       {/* Today's Timeline — the day assembled from what already happened and
           what is queued, chronologically. */}
@@ -231,6 +125,216 @@ export function HomeScreen({ onNavigate, onOpenSheet, onStartWorkout, onStartStr
           onStartWorkout={onStartWorkout}
         />
       </div>
+    </div>
+  );
+}
+
+/** Three concentric pillar rings with a shared centre readout. */
+function TriRings({ move, focus, fuel }: { move: number; focus: number; fuel: number }) {
+  const ring = (r: number, progress: number, color: string) => {
+    const circumference = 2 * Math.PI * r;
+    const clamped = Math.min(1, Math.max(0, progress));
+    return (
+      <g key={color}>
+        <circle cx="60" cy="60" r={r} fill="transparent" stroke="var(--track)" strokeWidth="8" />
+        <circle
+          cx="60"
+          cy="60"
+          r={r}
+          fill="transparent"
+          stroke={color}
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - clamped)}
+          style={{ transition: 'stroke-dashoffset 500ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+        />
+      </g>
+    );
+  };
+  return (
+    <svg viewBox="0 0 120 120" className="h-44 w-44 -rotate-90" role="img" aria-label="Daily equilibrium rings">
+      {ring(52, move, 'var(--move)')}
+      {ring(41, focus, 'var(--focus)')}
+      {ring(30, fuel, 'var(--nourish)')}
+    </svg>
+  );
+}
+
+function Equilibrium({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
+  const { state, now } = useStore();
+  const today = new Date(now);
+  const stats = weekWorkoutStats(state, today);
+  const focusGoalMin = Math.max(1, state.settings.pomodoroMin * state.settings.sessionsBeforeLong);
+  const focusMin = Math.round(focusTodayMs(state, today) / 60_000);
+  const nutrition = dayNutrition(state, today);
+
+  const move = stats.goal > 0 ? stats.done / stats.goal : 0;
+  const focus = focusMin / focusGoalMin;
+  const fuel = state.settings.dailyCalorieGoal > 0 ? nutrition.calories / state.settings.dailyCalorieGoal : 0;
+  const average = (Math.min(1, move) + Math.min(1, focus) + Math.min(1, fuel)) / 3;
+  const word = average >= 0.66 ? 'Balanced' : average >= 0.33 ? 'Building' : 'Quiet start';
+
+  return (
+    <section className="mt-4 rounded-[var(--radius-card)] border border-line bg-surface p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-tech text-[0.6875rem] uppercase tracking-[0.14em] text-ink-3">
+            Tri-pillar telemetry
+          </p>
+          <h2 className="mt-0.5 font-display text-[1.0625rem] font-semibold text-ink">
+            Daily equilibrium
+          </h2>
+        </div>
+        <span className="font-tech rounded-full bg-surface-3 px-2.5 py-1 text-[0.6875rem] text-ink-2">
+          {word}
+        </span>
+      </div>
+
+      <div className="relative mt-2 flex items-center justify-center">
+        <TriRings move={move} focus={focus} fuel={fuel} />
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+          <span className="text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
+            Equilibrium
+          </span>
+          <span className="font-tech tnum text-[1.75rem] font-semibold leading-none text-ink">
+            {Math.round(average * 100)}%
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        <button
+          type="button"
+          onClick={() => onNavigate('move')}
+          className="rounded-2xl bg-canvas p-2.5 text-left transition-colors hover:bg-surface-2"
+        >
+          <p className="flex items-center gap-1.5 text-[0.6875rem] text-ink-3">
+            <span className="h-2 w-2 rounded-full bg-move" aria-hidden /> Move
+          </p>
+          <p className="font-tech tnum mt-1 text-[0.875rem] font-medium text-ink">
+            {stats.done}
+            <span className="text-[0.6875rem] text-ink-3">/{stats.goal} sess</span>
+          </p>
+          <p className="font-tech mt-0.5 text-[0.6875rem] text-move">{Math.round(Math.min(1, move) * 100)}%</p>
+        </button>
+        <button
+          type="button"
+          onClick={() => onNavigate('focus')}
+          className="rounded-2xl bg-canvas p-2.5 text-left transition-colors hover:bg-surface-2"
+        >
+          <p className="flex items-center gap-1.5 text-[0.6875rem] text-ink-3">
+            <span className="h-2 w-2 rounded-full bg-focus" aria-hidden /> Focus
+          </p>
+          <p className="font-tech tnum mt-1 text-[0.875rem] font-medium text-ink">
+            {focusMin}
+            <span className="text-[0.6875rem] text-ink-3">/{focusGoalMin}m</span>
+          </p>
+          <p className="font-tech mt-0.5 text-[0.6875rem] text-focus">{Math.round(Math.min(1, focus) * 100)}%</p>
+        </button>
+        <button
+          type="button"
+          onClick={() => onNavigate('fuel')}
+          className="rounded-2xl bg-canvas p-2.5 text-left transition-colors hover:bg-surface-2"
+        >
+          <p className="flex items-center gap-1.5 text-[0.6875rem] text-ink-3">
+            <span className="h-2 w-2 rounded-full bg-nourish" aria-hidden /> Fuel
+          </p>
+          <p className="font-tech tnum mt-1 text-[0.875rem] font-medium text-ink">
+            {nutrition.calories.toLocaleString()}
+            <span className="text-[0.6875rem] text-ink-3"> kcal</span>
+          </p>
+          <p className="font-tech mt-0.5 text-[0.6875rem] text-nourish">{Math.round(Math.min(1, fuel) * 100)}%</p>
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function Harmony() {
+  const { state, now } = useStore();
+  const today = new Date(now);
+  const active = activeDayKeys(state);
+  const rhythm = rhythmCount(state, today);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6));
+
+  return (
+    <section className="mt-4 rounded-[var(--radius-card)] border border-line bg-surface p-5">
+      <div className="flex items-center justify-between">
+        <p className="font-tech text-[0.6875rem] uppercase tracking-[0.14em] text-ink-3">
+          7-day harmony
+        </p>
+        <span className="font-tech text-[0.6875rem] font-medium text-nourish">
+          {rhythm > 0 ? `${rhythm}-day rhythm` : 'a fresh page'}
+        </span>
+      </div>
+      <div className="mt-3 grid grid-cols-7 gap-1 text-center">
+        {days.map((day) => {
+          const isToday = dateKey(day) === dateKey(today);
+          const lit = active.has(dateKey(day));
+          return (
+            <div
+              key={dateKey(day)}
+              className={`flex flex-col items-center rounded-xl py-2 ${
+                isToday ? 'bg-nourish-soft/40' : 'bg-canvas'
+              }`}
+            >
+              <span className={`text-[0.6875rem] ${isToday ? 'font-semibold text-nourish' : 'text-ink-3'}`}>
+                {weekdayShort(day)[0]}
+              </span>
+              <span className={`font-tech mt-0.5 text-[0.75rem] ${isToday ? 'font-bold text-nourish' : 'text-ink-2'}`}>
+                {day.getDate()}
+              </span>
+              <span
+                className={`mt-1.5 h-1.5 w-1.5 rounded-full ${lit ? 'bg-nourish' : 'bg-track'}`}
+                aria-hidden
+              />
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-center text-[0.75rem] text-ink-3">
+        Consistency over intensity — rhythm beats streaks.
+      </p>
+    </section>
+  );
+}
+
+function QuickWidgets({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
+  const { state, dispatch, now } = useStore();
+  const today = new Date(now);
+  const waterMl = hydrationForDay(state, today);
+
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-2">
+      <button
+        type="button"
+        onClick={() => onNavigate('focus')}
+        className="flex h-16 items-center gap-3 rounded-[1.4rem] bg-surface p-3 text-left transition-colors hover:bg-surface-2"
+      >
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-focus-soft text-focus">
+          <Wind size={19} />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-[0.8125rem] font-semibold text-ink">Breath reset</span>
+          <span className="block truncate text-[0.6875rem] text-ink-3">60s in Focus</span>
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={() => dispatch({ type: 'hydration/add', day: dateKey(today), ml: 250 })}
+        className="flex h-16 items-center gap-3 rounded-[1.4rem] bg-surface p-3 text-left transition-colors hover:bg-surface-2"
+      >
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-nourish-soft text-nourish">
+          <Droplets size={19} />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-[0.8125rem] font-semibold text-ink">+250ml water</span>
+          <span className="font-tech block truncate text-[0.6875rem] text-ink-3">
+            {waterMl >= 1000 ? `${(waterMl / 1000).toFixed(1)}L logged` : `${waterMl}ml logged`}
+          </span>
+        </span>
+      </button>
     </div>
   );
 }
