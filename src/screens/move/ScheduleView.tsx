@@ -1,12 +1,12 @@
-import { useMemo } from 'react';
-import { Clock, Play, Sparkles, Wind } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Clock, Play, Plus, Sparkles, Wind } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { Tag } from '../../components/Chip';
 import { ExerciseArt } from '../../components/ExerciseArt';
 import { useStore } from '../../state/store';
 import { suggestWorkout, STRETCH_GOAL_LABELS } from '../../data/workouts';
 import type { Workout } from '../../types';
-import { dateKey, isSameDay, todayKey, weekStrip, weekdayShort } from '../../lib/date';
+import { dateKey, isSameDay, parseDateKey, relativeDayLabel, todayKey, weekStrip, weekdayShort } from '../../lib/date';
 import { weekWorkoutStats } from '../../lib/selectors';
 import { getExercise } from '../../data/exercises';
 
@@ -32,17 +32,17 @@ export function ScheduleView({
   const strip = weekStrip(new Date());
   const currentKey = todayKey();
   const stats = weekWorkoutStats(state, new Date());
-  const selectedKey = currentKey;
+  // Tapping a day selects it first; actions live in the day panel below.
+  // Opening the builder straight from the strip surprised — select, then act.
+  const [selectedKey, setSelectedKey] = useState(currentKey);
+  const selectedPlanned = state.schedule[selectedKey] ?? [];
 
-  // The day's planned workout, else the deterministic suggestion, becomes the
-  // featured card.
-  const planned = state.schedule[selectedKey] ?? [];
+  // The featured card always answers "what should I do today", regardless
+  // of which day is selected in the strip.
+  const todayPlanned = state.schedule[currentKey] ?? [];
   const suggestion = useMemo(() => suggestWorkout([]), []);
   const featured =
-    planned.find((w) => w.kind === 'workout') ?? suggestion;
-
-  const nextDayIndex =
-    strip.findIndex((d) => dateKey(d) === selectedKey);
+    todayPlanned.find((w) => w.kind === 'workout') ?? suggestion;
 
 
   return (
@@ -68,16 +68,16 @@ export function ScheduleView({
         </div>
 
         <div className="mt-4 grid grid-cols-7 gap-2">
-          {strip.map((day, i) => {
+          {strip.map((day) => {
             const isToday = isSameDay(day, new Date());
             const hasPlan = (state.schedule[dateKey(day)] ?? []).length > 0;
-            const isSelected = i === nextDayIndex;
+            const isSelected = dateKey(day) === selectedKey;
             return (
               <button
                 key={dateKey(day)}
                 type="button"
                 aria-pressed={isSelected}
-                onClick={() => onAddWorkout(dateKey(day))}
+                onClick={() => setSelectedKey(dateKey(day))}
                 className={`flex flex-col items-center justify-center gap-1 rounded-xl border px-1 py-3 transition-colors ${
                   isSelected
                     ? 'border-move bg-move/10 text-ink'
@@ -101,6 +101,63 @@ export function ScheduleView({
           })}
         </div>
       </section>
+
+      {/* Selected-day panel: what the tapped day holds, and the one place
+          the builder opens from. Hidden for today — the featured card
+          below already answers that. */}
+      {selectedKey !== currentKey && (
+        <section className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-tech text-[0.6875rem] uppercase tracking-[0.14em] text-ink-3">
+                {relativeDayLabel(parseDateKey(selectedKey), new Date())}
+              </p>
+              <h3 className="mt-1 font-display text-[1.0625rem] font-semibold text-ink">
+                {selectedPlanned.length > 0
+                  ? `${selectedPlanned.length} planned`
+                  : 'Nothing planned'}
+              </h3>
+            </div>
+            <Button
+              accent="move"
+              variant="soft"
+              size="sm"
+              icon={<Plus size={14} />}
+              onClick={() => onAddWorkout(selectedKey)}
+            >
+              Plan workout
+            </Button>
+          </div>
+          {selectedPlanned.length > 0 && (
+            <ul className="mt-4 space-y-2">
+              {selectedPlanned.map((workout) => (
+                <li
+                  key={workout.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-line bg-canvas px-3.5 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-[0.875rem] font-medium text-ink">{workout.name}</p>
+                    <p className="font-tech mt-0.5 text-[0.6875rem] text-ink-3">
+                      {workout.durationMin} min · {workout.items.length} exercises
+                    </p>
+                  </div>
+                  <Button
+                    accent="move"
+                    variant="soft"
+                    size="sm"
+                    icon={<Play size={14} />}
+                    onClick={() =>
+                      workout.kind === 'stretch' ? onStartStretch() : onStartWorkout(workout)
+                    }
+                  >
+                    Start
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {featured && (
         <div>
