@@ -112,6 +112,7 @@
 
   --animate-rise: rise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-fade: fade 0.2s ease-out both;
+  --animate-frame-swap: frame-swap 1.8s ease-in-out infinite;
   --animate-breathe: breathe 4.5s ease-in-out infinite;
   --animate-sweep: sweep 1.6s ease-in-out infinite;
   --animate-orbit: orbit 12s linear infinite;
@@ -134,6 +135,20 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+/* Two-frame exercise demo: the top frame holds, then yields to the frame
+   beneath, on a loop. Under prefers-reduced-motion the global rule collapses
+   this to a single still of the second frame. */
+@keyframes frame-swap {
+  0%,
+  42% {
+    opacity: 1;
+  }
+  58%,
+  100% {
+    opacity: 0;
   }
 }
 
