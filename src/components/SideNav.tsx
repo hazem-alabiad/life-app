@@ -3,11 +3,13 @@ import {
   Cloud,
   Dumbbell,
   House,
+  ListPlus,
   Plus,
   Salad,
   Settings2,
   StretchVertical,
   Target,
+  UtensilsCrossed,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { TabId } from '../types';
@@ -151,22 +153,26 @@ export function BottomNav({ active, onChange }: MobileNavProps) {
 }
 
 interface HeaderActionsProps {
-  onNavigate: (tab: TabId) => void;
+  onNewTask: () => void;
+  onLogMeal: () => void;
+  onPlanWorkout: () => void;
   onOpenSettings: () => void;
 }
 
 /**
  * The app-wide top bar right side: a green "+ Add" split-button with a small
- * menu of create actions. Kept minimal — settings gear beside it.
+ * menu of create actions. Every item does the thing it names — it opens the
+ * composer sheet or builder directly instead of merely switching tabs.
+ * Kept minimal — settings gear beside it.
  */
-export function HeaderActions({ onNavigate, onOpenSettings }: HeaderActionsProps) {
+export function HeaderActions({ onNewTask, onLogMeal, onPlanWorkout, onOpenSettings }: HeaderActionsProps) {
   const [open, setOpen] = useState(false);
   const [tick, setTick] = useState(0);
 
-  const actions: Array<{ label: string; tab: TabId }> = [
-    { label: 'Start a sprint', tab: 'focus' },
-    { label: 'Plan a workout', tab: 'move' },
-    { label: 'Log a meal', tab: 'fuel' },
+  const actions: Array<{ label: string; icon: LucideIcon; run: () => void }> = [
+    { label: 'New task', icon: ListPlus, run: onNewTask },
+    { label: 'Log meal', icon: UtensilsCrossed, run: onLogMeal },
+    { label: 'Plan workout', icon: Dumbbell, run: onPlanWorkout },
   ];
 
   return (
@@ -196,21 +202,25 @@ export function HeaderActions({ onNavigate, onOpenSettings }: HeaderActionsProps
               className="absolute right-0 z-50 mt-2 w-44 animate-rise overflow-hidden rounded-xl border border-line bg-surface-2 shadow-[0_16px_48px_-12px_var(--shadow-color)]"
               key={tick}
             >
-              {actions.map((action) => (
-                <button
-                  key={action.label}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setOpen(false);
-                    setTick((t) => t + 1);
-                    onNavigate(action.tab);
-                  }}
-                  className="block w-full px-4 py-2.5 text-left text-[0.8125rem] text-ink-2 transition-colors first:pt-3 last:pb-3 hover:bg-surface-3 hover:text-ink"
-                >
-                  {action.label}
-                </button>
-              ))}
+              {actions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <button
+                    key={action.label}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setOpen(false);
+                      setTick((t) => t + 1);
+                      action.run();
+                    }}
+                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[0.8125rem] text-ink-2 transition-colors first:pt-3 last:pb-3 hover:bg-surface-3 hover:text-ink"
+                  >
+                    <Icon size={15} className="text-ink-3" aria-hidden />
+                    {action.label}
+                  </button>
+                );
+              })}
             </div>
           </>
         )}

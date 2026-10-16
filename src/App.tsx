@@ -15,6 +15,7 @@ import { AddTaskSheet } from './screens/sheets/AddTaskSheet';
 import { InsightSheet } from './screens/sheets/InsightSheet';
 import { SettingsSheet } from './screens/sheets/SettingsSheet';
 import { getExercise } from './data/exercises';
+import { todayKey } from './lib/date';
 import type { SheetKind, TabId, Workout } from './types';
 
 const TITLES: Record<TabId, string> = {
@@ -68,12 +69,26 @@ export function App() {
     setSheet(tab === 'focus' ? { kind: 'focus-settings' } : { kind: 'settings' });
   }, [tab]);
 
+  // Header quick actions do the thing they name: sheets open in place, and
+  // planning lands on Move with the builder already open for today.
+  const planWorkout = useCallback(() => {
+    setSheet(null);
+    setTab('move');
+    setBuilderDay(todayKey());
+  }, []);
+
   return (
     <div className="min-h-screen bg-canvas">
       <SideNav active={tab} onChange={go} onOpenSettings={openSettings} />
 
       <div className="lg:pl-64">
-        <AppHeader title={TITLES[tab]} onNavigate={go} onOpenSettings={openSettings} />
+        <AppHeader
+          title={TITLES[tab]}
+          onNewTask={() => setSheet({ kind: 'add-task' })}
+          onLogMeal={() => setSheet({ kind: 'add-meal' })}
+          onPlanWorkout={planWorkout}
+          onOpenSettings={openSettings}
+        />
         <main>
           {tab === 'home' && (
             <HomeScreenWrapper

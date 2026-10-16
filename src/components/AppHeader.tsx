@@ -1,4 +1,3 @@
-import type { TabId } from '../types';
 import { HeaderActions } from './SideNav';
 import { CONTAINER } from './TopBar';
 
@@ -9,11 +8,15 @@ import { CONTAINER } from './TopBar';
  */
 export function AppHeader({
   title,
-  onNavigate,
+  onNewTask,
+  onLogMeal,
+  onPlanWorkout,
   onOpenSettings,
 }: {
   title: string;
-  onNavigate: (tab: TabId) => void;
+  onNewTask: () => void;
+  onLogMeal: () => void;
+  onPlanWorkout: () => void;
   onOpenSettings: () => void;
 }) {
   return (
@@ -24,7 +27,12 @@ export function AppHeader({
         </h1>
 
         <div className="ml-auto flex flex-shrink-0 items-center md:ml-0">
-          <HeaderActions onNavigate={onNavigate} onOpenSettings={onOpenSettings} />
+          <HeaderActions
+            onNewTask={onNewTask}
+            onLogMeal={onLogMeal}
+            onPlanWorkout={onPlanWorkout}
+            onOpenSettings={onOpenSettings}
+          />
         </div>
       </div>
     </header>
